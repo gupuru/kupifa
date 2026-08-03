@@ -55,7 +55,6 @@ enum ActionMode: String, CaseIterable, Identifiable {
 enum AIProvider: String, CaseIterable, Identifiable {
     case grok
     case claude
-    case gemini
 
     var id: String { rawValue }
 
@@ -63,7 +62,6 @@ enum AIProvider: String, CaseIterable, Identifiable {
         switch self {
         case .grok: "Grok"
         case .claude: "Claude"
-        case .gemini: "Gemini"
         }
     }
 
@@ -72,7 +70,6 @@ enum AIProvider: String, CaseIterable, Identifiable {
         switch self {
         case .grok: "grok-4.5"
         case .claude: "claude-sonnet-4-5"
-        case .gemini: "gemini-2.5-flash"
         }
     }
 
@@ -81,7 +78,6 @@ enum AIProvider: String, CaseIterable, Identifiable {
         switch self {
         case .grok: "grok-4.5"
         case .claude: "claude-haiku-4-5"
-        case .gemini: "gemini-2.5-flash-lite"
         }
     }
 
@@ -105,7 +101,6 @@ enum AIProvider: String, CaseIterable, Identifiable {
         switch self {
         case .grok: "https://console.x.ai"
         case .claude: "https://console.anthropic.com"
-        case .gemini: "https://aistudio.google.com/apikey"
         }
     }
 }

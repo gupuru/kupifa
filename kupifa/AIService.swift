@@ -2,7 +2,7 @@
 //  AIService.swift
 //  kupifa
 //
-//  Grok / Claude / Gemini のAPIを直接叩く薄いクライアント（SSEストリーミング対応）。
+//  Grok / Claude のAPIを直接叩く薄いクライアント（SSEストリーミング対応）。
 //
 
 import Foundation
@@ -56,7 +56,6 @@ struct AIService {
         let hosts = [
             "https://api.x.ai",
             "https://api.anthropic.com",
-            "https://generativelanguage.googleapis.com",
         ]
         for host in hosts {
             guard let url = URL(string: host) else { continue }
@@ -96,14 +95,6 @@ struct AIService {
             )
         case .claude:
             return try await streamClaude(
-                prompt: prompt,
-                apiKey: apiKey,
-                model: model,
-                maxTokens: maxTokens,
-                onEvent: onEvent
-            )
-        case .gemini:
-            return try await streamGemini(
                 prompt: prompt,
                 apiKey: apiKey,
                 model: model,
@@ -230,58 +221,6 @@ struct AIService {
                 !text.isEmpty
             else { return nil }
             return text
-        }
-
-        guard !text.isEmpty else { throw AIServiceError.emptyResponse }
-        return text
-    }
-
-    // MARK: - Gemini (Google Generative Language API)
-
-    private static func streamGemini(
-        prompt: PromptBuilder.Prompt,
-        apiKey: String,
-        model: String,
-        maxTokens: Int,
-        onEvent: EventHandler?
-    ) async throws -> String {
-        let body: [String: Any] = [
-            "system_instruction": [
-                "parts": [["text": prompt.system]]
-            ],
-            "contents": [
-                ["role": "user", "parts": [["text": prompt.user]]]
-            ],
-            "generationConfig": [
-                "maxOutputTokens": maxTokens
-            ],
-        ]
-
-        let url = URL(
-            string: "https://generativelanguage.googleapis.com/v1beta/models/\(model):streamGenerateContent?alt=sse"
-        )!
-
-        let text = try await streamSSE(
-            url: url,
-            headers: ["x-goog-api-key": apiKey],
-            body: body,
-            onEvent: onEvent
-        ) { json, emitThinking in
-            // 候補はあるが text が空（thinkingなど）なら考え中扱い
-            if json["candidates"] != nil {
-                emitThinking()
-            }
-            guard
-                let candidates = json["candidates"] as? [[String: Any]],
-                let content = candidates.first?["content"] as? [String: Any],
-                let parts = content["parts"] as? [[String: Any]]
-            else { return nil }
-            let chunk = parts.compactMap { part -> String? in
-                // thought パートは本文に混ぜない
-                if part["thought"] as? Bool == true { return nil }
-                return part["text"] as? String
-            }.joined()
-            return chunk.isEmpty ? nil : chunk
         }
 
         guard !text.isEmpty else { throw AIServiceError.emptyResponse }

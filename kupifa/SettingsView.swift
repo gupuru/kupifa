@@ -191,7 +191,7 @@ private struct GeneralSettingsTab: View {
 
             Section("速度") {
                 Toggle("速さ優先", isOn: $preferSpeed)
-                Text("ON: 高速モデル（Haiku / Flash-Lite / Grok 4.5・reasoning低）と短い出力上限。OFF: 品質寄りモデル。モデル名を手動指定している場合はそちらが優先されます。")
+                Text("ON: 高速モデル（Haiku / Grok 4.5・reasoning低）と短い出力上限。OFF: 品質寄りモデル。モデル名を手動指定している場合はそちらが優先されます。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

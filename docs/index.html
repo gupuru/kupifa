@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>kupifa — 鍵は、渡さない。</title>
-  <meta name="description" content="kupifaはAPIキーをあなた自身で管理するmacOS用AIクイックアシスタント。キーはmacOSキーチェーンに保存され、運営は入力も履歴も一切受け取りません。">
+  <title>kupifa — 書いてる途中で、整える。</title>
+  <meta name="description" content="ホットキー一発で文章を整え、返事を書き、翻訳するmacOS用のAIパネル。GrokとClaudeを並べて比較でき、APIキーは自分のキーチェーンに置きます。">
   <meta name="theme-color" content="#08090c">
-  <meta property="og:title" content="kupifa — 鍵は、渡さない。">
-  <meta property="og:description" content="自分のキー。自分のマシン。運営は情報を受け取らない。">
+  <meta property="og:title" content="kupifa — 書いてる途中で、整える。">
+  <meta property="og:description" content="メールの途中で⌥ Space。整える、返事、翻訳。GrokとClaudeを並べて選ぶ。">
   <meta property="og:type" content="website">
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -34,84 +34,173 @@
       kupifa
     </a>
     <nav class="nav-links" aria-label="ページ内">
-      <a href="#architecture">設計</a>
-      <a href="#guarantees">保証</a>
-      <a href="#product">機能</a>
+      <a href="#flow">流れ</a>
+      <a href="#product">できること</a>
+      <a href="#keys">キー</a>
       <a href="#start">始める</a>
     </nav>
     <div class="nav-status" aria-live="polite">
       <span class="pulse"></span>
-      運営受信 <strong>0 B</strong>
+      <kbd>⌥ Space</kbd>
     </div>
   </header>
 
   <main id="main">
     <section class="hero" id="top">
       <p class="eyebrow">
-        <span class="chip">BYOK</span>
-        <span class="chip">KEYCHAIN</span>
-        <span class="chip">NO RELAY</span>
+        <span class="chip">macOS</span>
+        <span class="chip">GROK · CLAUDE</span>
+        <span class="chip">メニューバー</span>
       </p>
       <h1>
-        鍵は、<em>渡さない。</em>
+        書いてる途中で、<em>整える。</em>
       </h1>
       <p class="lede">
-        macOSのホットキー一発で文章を整え、翻訳し、返事を書く。<br>
-        APIキーはあなたのキーチェーンに。入力も履歴も、運営には届かない。
+        メールの下書きを、チャット画面に持ち出す必要はない。<br>
+        <kbd>⌥ Space</kbd> でパネル、<kbd>⌘⏎</kbd> で投げる。<kbd>⌘⇧C</kbd> でコピーして、元の文に戻る。
       </p>
       <div class="hero-actions">
-        <a class="btn btn-primary" href="#start">手元で始める</a>
-        <a class="btn btn-ghost" href="#architecture">通信経路を見る</a>
+        <a class="btn btn-primary" href="#flow">使い方を見る</a>
+        <a class="btn btn-ghost" href="#product">何ができるか</a>
       </div>
-      <p class="hero-note">サーバーを持たないクライアント。プロバイダへは、あなた自身の鍵で直接話す。</p>
+      <p class="hero-note">Grok と Claude を同時に投げて、並べて選べる。キーは自分のものをキーチェーンへ。</p>
     </section>
 
-    <section class="stage will-reveal" aria-label="ローカル金庫のビジュアル">
-      <div class="vault">
-        <div class="vault-ring"></div>
-        <div class="vault-ring delay"></div>
-        <div class="vault-core">
-          <div class="vault-lock" aria-hidden="true">
-            <svg viewBox="0 0 72 72" width="72" height="72">
-              <circle cx="36" cy="30" r="12" fill="none" stroke="currentColor" stroke-width="3"/>
-              <rect x="20" y="30" width="32" height="26" rx="6" fill="none" stroke="currentColor" stroke-width="3"/>
-              <circle cx="36" cy="42" r="3.2" fill="currentColor"/>
-              <path d="M36 45.2v6" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-            </svg>
+    <section class="stage will-reveal" aria-label="kupifaパネルの見本">
+      <div class="vault vault-panel">
+        <div class="panel panel-hero">
+          <div class="panel-chrome">
+            <span>kupifa</span>
+            <span class="dots">全モデル · ⌥ Space</span>
           </div>
-          <p class="vault-kicker">LOCAL VAULT</p>
-          <p class="vault-title">macOS Keychain</p>
-          <p class="vault-copy">Grok / Claude のキーは端末の金庫へ。<br>kupifaのサーバーは、そもそも無い。</p>
+          <div class="panel-modes">
+            <button type="button" class="mode is-on">文章を整える</button>
+            <button type="button" class="mode">返事作成</button>
+            <button type="button" class="mode">翻訳</button>
+          </div>
+          <div class="panel-body">
+            <p class="ghost-input">明日の打ち合わせ、少し遅れそうです。先に資料だけ共有しておきます。</p>
+            <div class="panel-results">
+              <div class="result-card">
+                <p class="result-meta">Claude</p>
+                <p data-role="claude">明日の打ち合わせに少々遅れる見込みです。恐れ入りますが、先に資料のみ共有いたします。</p>
+              </div>
+              <div class="result-card">
+                <p class="result-meta">Grok</p>
+                <p data-role="grok">明日の打ち合わせ、少し遅れる予定です。先に資料だけ共有します。</p>
+              </div>
+            </div>
+          </div>
         </div>
-        <ul class="vault-tags">
-          <li>APIキーは外に出ない</li>
-          <li>履歴は端末内</li>
-          <li>テレメトリなし</li>
-        </ul>
       </div>
     </section>
 
-    <section class="statement will-reveal">
-      <p class="mono-label">01 — PRINCIPLE</p>
-      <h2>運営は、情報を受け取らない。</h2>
+    <section class="statement will-reveal" id="flow">
+      <p class="mono-label">01 — FLOW</p>
+      <h2>ウィンドウを切り替えない。</h2>
       <p>
-        キーを預かって「安全に管理します」とは言わない。預かると、漏れる側になるから。<br>
-        kupifaは中継しない。鍵も文章も、運営の手元には来ない。
+        書いてるアプリはそのまま。パネルだけが手前に出る。<br>
+        整えて、コピーして、閉じる。チャットの履歴を漁る往復がない。
       </p>
     </section>
 
-    <section class="architecture will-reveal" id="architecture">
+    <ol class="steps flow-steps will-reveal">
+      <li>
+        <p class="step-n">1</p>
+        <h3>書いた途中で呼ぶ</h3>
+        <p><kbd>⌥ Space</kbd>。あるいは他のアプリで <kbd>⌘C</kbd> を続けて2回。選択中の文が、すでに入力欄に入った状態で開く。</p>
+      </li>
+      <li>
+        <p class="step-n">2</p>
+        <h3>モードを選んで投げる</h3>
+        <p>整える / 返事 / 翻訳。<kbd>⌘⏎</kbd>。Grok だけ、Claude だけ、あるいは両方に同時。</p>
+      </li>
+      <li>
+        <p class="step-n">3</p>
+        <h3>通った文を貼る</h3>
+        <p><kbd>⌘⇧C</kbd> で先頭の結果をコピー。パネルを閉じて、元のメールに戻る。</p>
+      </li>
+    </ol>
+
+    <section class="guarantees will-reveal" id="product">
       <div class="section-head">
-        <p class="mono-label">02 — PATH</p>
-        <h2>通信は、あなたのMacからプロバイダへ。</h2>
-        <p class="section-lead">kupifaクラウドは経路に入らない。パケットは端末と AI プロバイダの間だけを走る。</p>
+        <p class="mono-label">02 — DOES</p>
+        <h2>メールの途中で足りる、3つの作業。</h2>
+        <p class="section-lead">前置きも解説も出さない。整えた本文だけが返ってくる。</p>
+      </div>
+      <div class="bento">
+        <article class="card span-2">
+          <p class="card-kicker">⌘1 · 文章を整える</p>
+          <h3>口語のメモが、送れる文になる。</h3>
+          <p>意味は変えない。誤字と、回りくどい言い方だけ直す。社内メールの下書きを、その場で通すためのモード。</p>
+        </article>
+        <article class="card">
+          <p class="card-kicker">⌘2 · 返事作成</p>
+          <h3>相手の文に、返す。</h3>
+          <p>届いた原文と、返したい要点の走り書きを入れる。質問の漏れがない返信になる。</p>
+        </article>
+        <article class="card">
+          <p class="card-kicker">⌘3 · 翻訳</p>
+          <h3>トーンを残して、日英。</h3>
+          <p>結果カードで 日 ⇄ EN。まだ無い言語は、その場で足せる。</p>
+        </article>
+        <article class="card span-2 dark">
+          <p class="card-kicker">⌘M · 全モデル</p>
+          <h3>Grok と Claude を、並べて見る。</h3>
+          <p>登録したモデルへ同時に投げて、カードで比較する。どっちが通るかは、チャットを2つ開かなくても決まる。</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="product will-reveal">
+      <div class="section-head">
+        <p class="mono-label">03 — HANDS</p>
+        <h2>手は、キーボードから離れない。</h2>
+      </div>
+      <ul class="feature-list feature-grid">
+        <li>
+          <span>01</span>
+          <div>
+            <h3>メニューバー常駐</h3>
+            <p>Dockには出ない。必要なときだけ、Spotlightみたいなパネル。</p>
+          </div>
+        </li>
+        <li>
+          <span>02</span>
+          <div>
+            <h3>ダブルコピー起動</h3>
+            <p>他のアプリで <kbd>⌘C</kbd> を2回。選択テキストを入れて開く。</p>
+          </div>
+        </li>
+        <li>
+          <span>03</span>
+          <div>
+            <h3>日英を同時に生成</h3>
+            <p>設定をオンにすると、実行時に両方作っておく。スイッチが待ち時間にならない。</p>
+          </div>
+        </li>
+        <li>
+          <span>04</span>
+          <div>
+            <h3>履歴はサイドバー</h3>
+            <p><kbd>⌘0</kbd>。さっき整えた指示と結果を、クリックで戻せる。</p>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <section class="architecture will-reveal" id="keys">
+      <div class="section-head">
+        <p class="mono-label">04 — KEYS</p>
+        <h2>キーは、自分のものを使う。</h2>
+        <p class="section-lead">xAI と Anthropic のコンソールで発行して、設定に置く。kupifaは預からない。通信はあなたのMacから各APIへ直通。</p>
       </div>
 
       <div class="flow" role="img" aria-label="あなたのMacからGrokとClaudeへ直接接続。kupifaサーバーは経路に含まれない">
         <article class="node node-mac">
           <span class="node-id">YOU</span>
           <h3>Your Mac</h3>
-          <p>キーチェーンに鍵。<br>履歴もローカル。</p>
+          <p>キーはキーチェーン。<br>履歴もこの端末。</p>
           <div class="key-pills">
             <span>xai-…</span>
             <span>sk-ant-…</span>
@@ -139,8 +228,8 @@
 
         <article class="node node-void">
           <span class="node-id">ABSENT</span>
-          <h3>kupifa server</h3>
-          <p>受信キューは空。<br>ログも、鍵も、本文も無い。</p>
+          <h3>kupifa のサーバー</h3>
+          <p>中継しない。入力もキーも、運営には来ない。</p>
           <div class="void-meter">
             <span>IN</span>
             <strong id="bytes">0</strong>
@@ -150,144 +239,43 @@
       </div>
     </section>
 
-    <section class="guarantees will-reveal" id="guarantees">
-      <div class="section-head">
-        <p class="mono-label">03 — GUARANTEES</p>
-        <h2>セキュリティを、宣伝ではなく構造にする。</h2>
-      </div>
-      <div class="bento">
-        <article class="card span-2">
-          <p class="card-kicker">Bring Your Own Key</p>
-          <h3>キーは、あなたが発行し、あなたが持つ。</h3>
-          <p>Grok と Claude のキーを、各コンソールで自分で取得する。kupifaは預からない。紛失も漏洩も、運営側の事故にならない設計。</p>
-        </article>
-        <article class="card">
-          <p class="card-kicker">Keychain</p>
-          <h3>macOSの金庫へ。</h3>
-          <p>保存先は Keychain。設定画面から端末の外へコピーされることはない。</p>
-        </article>
-        <article class="card">
-          <p class="card-kicker">No relay</p>
-          <h3>中継サーバーなし。</h3>
-          <p>リクエストは選択したプロバイダの公式APIだけ。運営APIを経由しない。</p>
-        </article>
-        <article class="card">
-          <p class="card-kicker">Local history</p>
-          <h3>履歴は端末の中。</h3>
-          <p>指示と結果はパネルのサイドバーに残る。同期用のクラウドは無い。</p>
-        </article>
-        <article class="card span-3 dark">
-          <p class="card-kicker">Zero intake</p>
-          <h3>運営が受け取らないもの</h3>
-          <ul class="never-list">
-            <li>APIキー</li>
-            <li>入力した文章</li>
-            <li>生成結果</li>
-            <li>利用履歴</li>
-            <li>どのモデルを使ったか</li>
-            <li>テレメトリ</li>
-          </ul>
-        </article>
-      </div>
-    </section>
-
-    <section class="product will-reveal" id="product">
-      <div class="section-head">
-        <p class="mono-label">04 — PRODUCT</p>
-        <h2>速さは、セキュリティと両立する。</h2>
-        <p class="section-lead">メニューバー常駐。⌥ Space でパネル。文章を整える、返事作成、翻訳。Grok と Claude を並べて比較できる。</p>
-      </div>
-
-      <div class="product-grid">
-        <div class="panel" aria-hidden="true">
-          <div class="panel-chrome">
-            <span>kupifa</span>
-            <span class="dots">⌥ Space</span>
-          </div>
-          <div class="panel-modes">
-            <button type="button" class="mode is-on">文章を整える</button>
-            <button type="button" class="mode">返事作成</button>
-            <button type="button" class="mode">翻訳</button>
-          </div>
-          <div class="panel-body">
-            <p class="ghost-input">明日の打ち合わせ、少し遅れそうです。先に資料だけ共有しておきます。</p>
-            <div class="result-card">
-              <p class="result-meta">Claude · ローカル実行</p>
-              <p>明日の打ち合わせに少々遅れる見込みです。恐れ入りますが、先に資料のみ共有いたします。</p>
-            </div>
-          </div>
-        </div>
-
-        <ul class="feature-list">
-          <li>
-            <span>01</span>
-            <div>
-              <h3>ホットキー起動</h3>
-              <p>デフォルト ⌥ Space。Spotlight風のフローティングパネル。</p>
-            </div>
-          </li>
-          <li>
-            <span>02</span>
-            <div>
-              <h3>Grok / Claude</h3>
-              <p>パネル上で切り替え。⌘M で全モデル同時実行、カードで比較。</p>
-            </div>
-          </li>
-          <li>
-            <span>03</span>
-            <div>
-              <h3>日英スイッチ</h3>
-              <p>結果カードで 日 ⇄ EN。未生成の言語はその場で翻訳。</p>
-            </div>
-          </li>
-          <li>
-            <span>04</span>
-            <div>
-              <h3>ダブルコピー起動</h3>
-              <p>⌘C を続けて2回で、選択テキストを入れてパネルを開く。</p>
-            </div>
-          </li>
-        </ul>
-      </div>
-    </section>
-
     <section class="start will-reveal" id="start">
       <div class="section-head">
         <p class="mono-label">05 — START</p>
-        <h2>鍵を発行して、設定に置くだけ。</h2>
+        <h2>キーを置いて、⌥ Space。</h2>
       </div>
       <ol class="steps">
         <li>
           <p class="step-n">1</p>
-          <h3>キーを自分で取る</h3>
+          <h3>キーを取る</h3>
           <p>
-            <a href="https://console.x.ai" rel="noopener noreferrer" target="_blank">xAI Console</a>
+            <a href="https://console.x.ai" rel="noopener noreferrer" target="_blank">xAI</a>
             と
-            <a href="https://console.anthropic.com" rel="noopener noreferrer" target="_blank">Anthropic Console</a>
-            から発行。kupifaに送る手順は無い。
+            <a href="https://console.anthropic.com" rel="noopener noreferrer" target="_blank">Anthropic</a>
+            で発行する。kupifaに送る画面はない。
           </p>
         </li>
         <li>
           <p class="step-n">2</p>
-          <h3>キーチェーンへ保存</h3>
-          <p>メニューバーの ✨ → 設定。キーは macOS Keychain にだけ書き込まれる。</p>
+          <h3>設定に保存</h3>
+          <p>メニューバーの ✨ → 設定。キーは macOS のキーチェーンへ。</p>
         </li>
         <li>
           <p class="step-n">3</p>
-          <h3>⌥ Space</h3>
-          <p>パネルを開き、整える / 返事 / 翻訳。実行はプロバイダ直通。</p>
+          <h3>書いてる途中で呼ぶ</h3>
+          <p><kbd>⌥ Space</kbd>。整える、返事、翻訳。通った文をコピーして戻る。</p>
         </li>
       </ol>
       <div class="cta-row">
         <a class="btn btn-primary" href="https://github.com/gupuru/kupifa" rel="noopener noreferrer" target="_blank">GitHub でソースを見る</a>
-        <p class="cta-note">macOS 15+ / オープンなクライアント。運営バックエンドは同梱されていない。</p>
+        <p class="cta-note">macOS 15+ · メニューバー常駐 · アクセシビリティ許可が必要</p>
       </div>
     </section>
   </main>
 
   <footer class="foot">
-    <p>kupifa — 鍵は端末に。運営は受け取らない。</p>
-    <p class="foot-meta">メニューバー常駐 · Dock非表示 · アクセシビリティ許可が必要</p>
+    <p>kupifa — 書いてる途中で、整える。</p>
+    <p class="foot-meta">キーは端末に置く · 運営は中継しない</p>
   </footer>
 
   <script src="./app.js"></script>

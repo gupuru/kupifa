@@ -167,9 +167,8 @@ main,
   color: var(--muted);
 }
 
-.nav-status strong {
+.nav-status kbd {
   color: var(--lime);
-  font-weight: 500;
 }
 
 .pulse {
@@ -720,12 +719,53 @@ h2 {
   padding: 18px;
 }
 
+kbd {
+  display: inline-block;
+  padding: 1px 7px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(243, 239, 228, 0.05);
+  font-family: var(--mono);
+  font-size: 0.86em;
+  letter-spacing: 0.04em;
+}
+
+.vault.vault-panel {
+  min-height: 0;
+  padding: 28px;
+  place-items: stretch;
+}
+
+.panel-hero {
+  position: relative;
+  z-index: 1;
+  width: min(920px, 100%);
+  margin: 0 auto;
+}
+
+.panel-results {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
 .ghost-input {
   margin: 0 0 16px;
   padding: 14px;
   border-radius: 12px;
   background: #14161c;
   color: #cfcab8;
+  white-space: pre-line;
+}
+
+.flow-steps {
+  max-width: var(--max);
+  margin: 0 auto 4vh;
+  padding: 0 6vw 4vh;
+}
+
+.feature-grid {
+  grid-template-columns: 1fr 1fr;
 }
 
 .result-card {
@@ -848,7 +888,9 @@ h2 {
   .flow,
   .bento,
   .product-grid,
-  .steps {
+  .steps,
+  .panel-results,
+  .feature-grid {
     grid-template-columns: 1fr;
   }
 

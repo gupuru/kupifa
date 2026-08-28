@@ -622,6 +622,10 @@ h2 {
   grid-column: span 3;
 }
 
+.card.span-4 {
+  grid-column: span 4;
+}
+
 .card.dark {
   background: #0c0e13;
 }
@@ -904,6 +908,7 @@ kbd {
 
   .card.span-2,
   .card.span-3,
+  .card.span-4,
   .void-meter {
     grid-column: auto;
     margin-left: 0;

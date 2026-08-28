@@ -619,6 +619,10 @@ h2 {
   grid-column: span 2;
 }
 
+.card.span-3 {
+  grid-column: span 3;
+}
+
 .card.dark {
   background: #0c0e13;
 }
@@ -857,13 +861,47 @@ h2 {
   }
 
   .card.span-2,
+  .card.span-3,
   .void-meter {
     grid-column: auto;
     margin-left: 0;
   }
 
   .pipes {
-    min-height: 48px;
+    min-height: 56px;
+  }
+
+  .pipes::before {
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    right: auto;
+    width: 1px;
+    height: auto;
+    background: linear-gradient(180deg, var(--lime), var(--ice));
+  }
+
+  .packet {
+    top: 0;
+    left: calc(50% - 4px);
+    animation-name: shoot-down;
+  }
+
+  @keyframes shoot-down {
+    0% {
+      top: 0;
+      opacity: 0;
+    }
+    12% {
+      opacity: 1;
+    }
+    88% {
+      opacity: 1;
+    }
+    100% {
+      top: calc(100% - 9px);
+      opacity: 0;
+    }
   }
 
   .never-list {

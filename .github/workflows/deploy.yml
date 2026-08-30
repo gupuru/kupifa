@@ -53,7 +53,8 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy docs --project-name=kupifa --branch=main
+          # wrangler.toml の pages_build_output_dir とルートの functions/ を使う
+          command: pages deploy --project-name=kupifa --branch=main
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
 
   dmg:

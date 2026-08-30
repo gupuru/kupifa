@@ -2,7 +2,7 @@
 
 ホットキー一発で呼び出せる、macOS用のAIクイックアシスタント。
 
-プロダクトサイト（`docs/`）: ホットキーで文章を整え、Grok と Claude を並べて比較できる、という使い方を先に見せています。GitHub Pages の Source を `docs/` にすると公開できます。
+プロダクトサイト（`docs/`）: ホットキーで文章を整え、Grok と Claude を並べて比較できる、という使い方を先に見せています。公開先は [Cloudflare Pages](https://kupifa.pages.dev/)。
 
 メール文章の下書きなど、書きかけのテキストをその場でAIに投げて「文章を整える」「翻訳」「検索」ができる、Spotlight風のフローティングパネルアプリです。
 
@@ -66,6 +66,53 @@
 open kupifa.xcodeproj
 # Xcodeで kupifa スキームを選んで Run (⌘R)
 ```
+
+配布用の `.dmg` はローカルでも作れます。
+
+```bash
+./scripts/build-release.sh
+# 完成: dist/kupifa.dmg
+```
+
+いまは ad-hoc 署名です。Developer ID + 公証に移すときは、スクリプト先頭の `SIGN_IDENTITY` を変えて、`notarytool` / `stapler` を足してください。
+
+## サイト公開・配布（Cloudflare）
+
+リポジトリは private のまま、サイトと `.dmg` だけ公開します。
+
+| もの | 置き場 | URL |
+| --- | --- | --- |
+| ランディング（`docs/`） | Cloudflare Pages | https://kupifa.pages.dev/ |
+| `kupifa.dmg` | Cloudflare R2（`kupifa-downloads`） | https://kupifa.pages.dev/download |
+
+Pages は1ファイル 25MiB までなので、DMG は R2 に置き、Pages Function（`functions/download.js`）が `/download` で配信します。デプロイは `.github/workflows/deploy.yml` です。
+
+### 初回だけやること
+
+1. Cloudflare ダッシュボードで **R2 を有効化**する（未有効だとバケット作成が `code: 10042` で落ちる）
+2. API トークンを作る  
+   [Create Custom Token](https://dash.cloudflare.com/profile/api-tokens) で、少なくとも次を付与する  
+   - Account → Cloudflare Pages → Edit  
+   - Account → Workers R2 Storage → Edit
+3. Account ID を控える（ダッシュボード右下、または Overview）
+4. GitHub リポジトリの **Settings → Secrets and variables → Actions** に入れる  
+   - `CLOUDFLARE_API_TOKEN`  
+   - `CLOUDFLARE_ACCOUNT_ID`
+
+初回の `main` プッシュで Pages プロジェクト `kupifa` と R2 バケット `kupifa-downloads` を作ります。
+
+### サイトを更新する
+
+`main` に push すると `docs/` が Pages に載ります。
+
+### DMG を上げる
+
+毎プッシュでは作りません（macOS runner が重いため）。どちらかです。
+
+- GitHub Actions の **Deploy** を Run workflow し、`build_dmg` をオンにする
+- `v0.1.0` のような `v*` タグを push する
+
+上がるまで https://kupifa.pages.dev/download は `kupifa.dmg is not uploaded yet.` の 404 です。
 
 ## アーキテクチャ
 

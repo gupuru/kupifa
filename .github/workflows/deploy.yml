@@ -40,12 +40,20 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: r2 bucket create kupifa-downloads
 
+      - name: Ensure Pages project
+        uses: cloudflare/wrangler-action@v4
+        continue-on-error: true
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages project create kupifa --production-branch=main
+
       - name: Deploy docs to Pages
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy docs --project-name=kupifa
+          command: pages deploy docs --project-name=kupifa --branch=main
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
 
   dmg:

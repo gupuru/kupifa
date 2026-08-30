@@ -263,6 +263,41 @@ h1 em {
   color: #11150a;
 }
 
+.btn-download {
+  gap: 10px;
+  padding: 6px 20px 6px 8px;
+  background: var(--lime);
+  color: #11150a;
+}
+
+.btn-app-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
+}
+
+.btn-download-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.15;
+}
+
+.btn-download-copy strong {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.btn-download-copy small {
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  opacity: 0.62;
+}
+
 .btn-ghost {
   border: 1px solid var(--line);
   color: var(--ink);
@@ -857,7 +892,15 @@ kbd {
 }
 
 .cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
   margin-top: 36px;
+}
+
+.cta-row .cta-note {
+  flex-basis: 100%;
 }
 
 .cta-note {

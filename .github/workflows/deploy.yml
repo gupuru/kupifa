@@ -1,0 +1,68 @@
+# サイト → Cloudflare Pages（docs/）
+# DMG  → Cloudflare R2（kupifa-downloads/kupifa.dmg）
+# ダウンロードボタンは同一オリジンの /download を指す。
+#
+# GitHub Secrets:
+#   CLOUDFLARE_API_TOKEN   Account で Pages Edit + Workers R2 Storage Edit
+#   CLOUDFLARE_ACCOUNT_ID
+#
+# DMG は毎プッシュでは作らない（macOS runner が重い）。
+# タグ v* か、Actions の Run workflow で build_dmg をオンにしたときだけ。
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      build_dmg:
+        description: "Build DMG on macOS and upload to R2"
+        type: boolean
+        default: false
+
+jobs:
+  site:
+    name: Deploy Pages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Ensure R2 bucket
+        uses: cloudflare/wrangler-action@v4
+        continue-on-error: true
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: r2 bucket create kupifa-downloads
+
+      - name: Deploy docs to Pages
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy docs --project-name=kupifa
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+  dmg:
+    name: Build and upload DMG
+    if: >-
+      startsWith(github.ref, 'refs/tags/v')
+      || (github.event_name == 'workflow_dispatch' && inputs.build_dmg)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build DMG
+        run: ./scripts/build-release.sh
+
+      - name: Upload DMG to R2
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: r2 object put kupifa-downloads/kupifa.dmg --file=dist/kupifa.dmg --remote --content-type=application/x-apple-diskimage

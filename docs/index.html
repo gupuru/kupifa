@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>kupifa — 書いてる途中で、整える。</title>
+  <meta name="description" content="ホットキー一発で文章を整え、返事を書き、翻訳するmacOS用のAIパネル。GrokとClaudeを並べて比較でき、APIキーは自分のキーチェーンに置きます。">
+  <meta name="theme-color" content="#08090c">
+  <meta property="og:title" content="kupifa — 書いてる途中で、整える。">
+  <meta property="og:description" content="メールの途中で⌥ Space。整える、返事、翻訳。GrokとClaudeを並べて選ぶ。">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;500;600&family=Shippori+Mincho:wght@500;600;700&family=Syne:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+  <noscript>
+    <style>.will-reveal { opacity: 1; transform: none; }</style>
+  </noscript>
+</head>
+<body>
+  <a class="skip-link" href="#main">本文へスキップ</a>
+  <div class="noise" aria-hidden="true"></div>
+  <div class="orb orb-a" aria-hidden="true"></div>
+  <div class="orb orb-b" aria-hidden="true"></div>
+
+  <header class="nav">
+    <a class="brand" href="#top">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+          <path d="M8 10.2A4.2 4.2 0 1 1 16.4 10.2c0 1.6-.9 3-2.3 3.7V17H12.4v-1.3h-1.6V17H8.9v-3.1A4.2 4.2 0 0 1 8 10.2Zm4.2-2.4a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8Z" fill="currentColor"/>
+        </svg>
+      </span>
+      kupifa
+    </a>
+    <nav class="nav-links" aria-label="ページ内">
+      <a href="#flow">流れ</a>
+      <a href="#product">できること</a>
+      <a href="#keys">キー</a>
+      <a href="#start">始める</a>
+    </nav>
+    <div class="nav-status" aria-live="polite">
+      <span class="pulse"></span>
+      <kbd>⌥ Space</kbd>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <p class="eyebrow">
+        <span class="chip">macOS</span>
+        <span class="chip">GROK · CLAUDE</span>
+        <span class="chip">メニューバー</span>
+      </p>
+      <h1>
+        書いてる途中で、<em>整える。</em>
+      </h1>
+      <p class="lede">
+        メールの下書きを、チャット画面に持ち出す必要はない。<br>
+        <kbd>⌥ Space</kbd> でパネル、<kbd>⌘⏎</kbd> で投げる。<kbd>⌘⇧C</kbd> でコピーして、元の文に戻る。
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#flow">使い方を見る</a>
+        <a class="btn btn-ghost" href="#product">何ができるか</a>
+      </div>
+      <p class="hero-note">Grok と Claude を同時に投げて、並べて選べる。キーは自分のものをキーチェーンへ。</p>
+    </section>
+
+    <section class="stage will-reveal" aria-label="kupifaパネルの見本">
+      <div class="vault vault-panel">
+        <div class="panel panel-hero">
+          <div class="panel-chrome">
+            <span>kupifa</span>
+            <span class="dots">全モデル · ⌥ Space</span>
+          </div>
+          <div class="panel-modes">
+            <button type="button" class="mode is-on">文章を整える</button>
+            <button type="button" class="mode">返事作成</button>
+            <button type="button" class="mode">翻訳</button>
+          </div>
+          <div class="panel-body">
+            <p class="ghost-input">明日の打ち合わせ、少し遅れそうです。先に資料だけ共有しておきます。</p>
+            <div class="panel-results">
+              <div class="result-card">
+                <p class="result-meta">Claude</p>
+                <p data-role="claude">明日の打ち合わせに少々遅れる見込みです。恐れ入りますが、先に資料のみ共有いたします。</p>
+              </div>
+              <div class="result-card">
+                <p class="result-meta">Grok</p>
+                <p data-role="grok">明日の打ち合わせ、少し遅れる予定です。先に資料だけ共有します。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="statement will-reveal" id="flow">
+      <p class="mono-label">01 — FLOW</p>
+      <h2>ウィンドウを切り替えない。</h2>
+      <p>
+        書いてるアプリはそのまま。パネルだけが手前に出る。<br>
+        整えて、コピーして、閉じる。チャットの履歴を漁る往復がない。
+      </p>
+    </section>
+
+    <ol class="steps flow-steps will-reveal">
+      <li>
+        <p class="step-n">1</p>
+        <h3>書いた途中で呼ぶ</h3>
+        <p><kbd>⌥ Space</kbd>。あるいは他のアプリで <kbd>⌘C</kbd> を続けて2回。選択中の文が、すでに入力欄に入った状態で開く。</p>
+      </li>
+      <li>
+        <p class="step-n">2</p>
+        <h3>モードを選んで投げる</h3>
+        <p>整える / 返事 / 翻訳。<kbd>⌘⏎</kbd>。Grok だけ、Claude だけ、あるいは両方に同時。</p>
+      </li>
+      <li>
+        <p class="step-n">3</p>
+        <h3>通った文を貼る</h3>
+        <p><kbd>⌘⇧C</kbd> で先頭の結果をコピー。パネルを閉じて、元のメールに戻る。</p>
+      </li>
+    </ol>
+
+    <section class="guarantees will-reveal" id="product">
+      <div class="section-head">
+        <p class="mono-label">02 — DOES</p>
+        <h2>メールの途中で、足りる。</h2>
+        <p class="section-lead">前置きも解説も出さない。整えた本文だけが返ってくる。</p>
+      </div>
+      <div class="bento">
+        <article class="card span-2">
+          <p class="card-kicker">⌘1 · 文章を整える</p>
+          <h3>口語のメモが、送れる文になる。</h3>
+          <p>意味は変えない。誤字と、回りくどい言い方だけ直す。社内メールの下書きを、その場で通すためのモード。</p>
+        </article>
+        <article class="card">
+          <p class="card-kicker">⌘2 · 返事作成</p>
+          <h3>相手の文に、返す。</h3>
+          <p>届いた原文と、返したい要点の走り書きを入れる。質問の漏れがない返信になる。</p>
+        </article>
+        <article class="card">
+          <p class="card-kicker">⌘3 · 翻訳</p>
+          <h3>トーンを残して、日英。</h3>
+          <p>結果カードで 日 ⇄ EN。まだ無い言語は、その場で足せる。</p>
+        </article>
+        <article class="card span-4 dark">
+          <p class="card-kicker">⌘M · 全モデル</p>
+          <h3>Grok と Claude を、並べて見る。</h3>
+          <p>登録したモデルへ同時に投げて、カードで比較する。どっちが通るかは、チャットを2つ開かなくても決まる。</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="product will-reveal">
+      <div class="section-head">
+        <p class="mono-label">03 — HANDS</p>
+        <h2>手は、キーボードから離れない。</h2>
+      </div>
+      <ul class="feature-list feature-grid">
+        <li>
+          <span>01</span>
+          <div>
+            <h3>メニューバー常駐</h3>
+            <p>Dockには出ない。必要なときだけ、Spotlightみたいなパネル。</p>
+          </div>
+        </li>
+        <li>
+          <span>02</span>
+          <div>
+            <h3>ダブルコピー起動</h3>
+            <p>他のアプリで <kbd>⌘C</kbd> を2回。選択テキストを入れて開く。</p>
+          </div>
+        </li>
+        <li>
+          <span>03</span>
+          <div>
+            <h3>日英を同時に生成</h3>
+            <p>設定をオンにすると、実行時に両方作っておく。スイッチが待ち時間にならない。</p>
+          </div>
+        </li>
+        <li>
+          <span>04</span>
+          <div>
+            <h3>履歴はサイドバー</h3>
+            <p><kbd>⌘0</kbd>。さっき整えた指示と結果を、クリックで戻せる。</p>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <section class="architecture will-reveal" id="keys">
+      <div class="section-head">
+        <p class="mono-label">04 — KEYS</p>
+        <h2>キーは、自分のものを使う。</h2>
+        <p class="section-lead">xAI と Anthropic のコンソールで発行して、設定に置く。kupifaは預からない。通信はあなたのMacから各APIへ直通。</p>
+      </div>
+
+      <div class="flow" role="img" aria-label="あなたのMacからGrokとClaudeへ直接接続。kupifaサーバーは経路に含まれない">
+        <article class="node node-mac">
+          <span class="node-id">YOU</span>
+          <h3>Your Mac</h3>
+          <p>キーはキーチェーン。<br>履歴もこの端末。</p>
+          <div class="key-pills">
+            <span>xai-…</span>
+            <span>sk-ant-…</span>
+          </div>
+        </article>
+
+        <div class="pipes" aria-hidden="true">
+          <span class="packet p1"></span>
+          <span class="packet p2"></span>
+          <span class="pipe-label">TLS 直接</span>
+        </div>
+
+        <div class="providers">
+          <article class="node node-provider">
+            <span class="node-id">DIRECT</span>
+            <h3>xAI / Grok</h3>
+            <p>api.x.ai へ直通</p>
+          </article>
+          <article class="node node-provider">
+            <span class="node-id">DIRECT</span>
+            <h3>Anthropic / Claude</h3>
+            <p>api.anthropic.com へ直通</p>
+          </article>
+        </div>
+
+        <article class="node node-void">
+          <span class="node-id">ABSENT</span>
+          <h3>kupifa のサーバー</h3>
+          <p>中継しない。入力もキーも、運営には来ない。</p>
+          <div class="void-meter">
+            <span>IN</span>
+            <strong id="bytes">0</strong>
+            <span>bytes</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="start will-reveal" id="start">
+      <div class="section-head">
+        <p class="mono-label">05 — START</p>
+        <h2>キーを置いて、⌥ Space。</h2>
+      </div>
+      <ol class="steps">
+        <li>
+          <p class="step-n">1</p>
+          <h3>キーを取る</h3>
+          <p>
+            <a href="https://console.x.ai" rel="noopener noreferrer" target="_blank">xAI</a>
+            と
+            <a href="https://console.anthropic.com" rel="noopener noreferrer" target="_blank">Anthropic</a>
+            で発行する。kupifaに送る画面はない。
+          </p>
+        </li>
+        <li>
+          <p class="step-n">2</p>
+          <h3>設定に保存</h3>
+          <p>メニューバーの ✨ → 設定。キーは macOS のキーチェーンへ。</p>
+        </li>
+        <li>
+          <p class="step-n">3</p>
+          <h3>書いてる途中で呼ぶ</h3>
+          <p><kbd>⌥ Space</kbd>。整える、返事、翻訳。通った文をコピーして戻る。</p>
+        </li>
+      </ol>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="https://github.com/gupuru/kupifa" rel="noopener noreferrer" target="_blank">GitHub でソースを見る</a>
+        <p class="cta-note">macOS 15+ · メニューバー常駐 · アクセシビリティ許可が必要</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p>kupifa — 書いてる途中で、整える。</p>
+    <p class="foot-meta">キーは端末に置く · 運営は中継しない</p>
+  </footer>
+
+  <script src="./app.js"></script>
+</body>
+</html>

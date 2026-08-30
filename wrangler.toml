@@ -1,5 +1,5 @@
 name = "kupifa"
-compatibility_date = "2026-08-31"
+compatibility_date = "2026-08-01"
 pages_build_output_dir = "docs"
 
 # DMG は Pages の 25MiB 制限を超えることがあるので R2 に置く。

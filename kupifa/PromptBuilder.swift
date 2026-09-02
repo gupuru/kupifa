@@ -13,7 +13,12 @@ enum PromptBuilder {
         let user: String
     }
 
-    static func build(mode: ActionMode, input: String, outputLanguage: OutputLanguage) -> Prompt {
+    static func build(
+        mode: ActionMode,
+        input: String,
+        outputLanguage: OutputLanguage,
+        speakStyle: SpeakStyle = .plain
+    ) -> Prompt {
         let language = outputLanguage.promptName
         switch mode {
         case .polish:
@@ -66,6 +71,47 @@ enum PromptBuilder {
                 あなたはリサーチアシスタントです。\
                 ユーザーの質問に対して、Web検索した最新の情報をもとに\(language)で簡潔に回答してください。\
                 参照した情報源があればURLを添えてください。
+                """,
+                user: input
+            )
+        case .speak:
+            return speakPrompt(style: speakStyle, input: input, language: language)
+        }
+    }
+
+    private static func speakPrompt(style: SpeakStyle, input: String, language: String) -> Prompt {
+        switch style {
+        case .plain:
+            return Prompt(system: "", user: input)
+        case .radio:
+            return Prompt(
+                system: """
+                あなたはラジオのパーソナリティです。入力された文章・記事を、\
+                耳で聞いて自然なラジオ番組の原稿に書き直してください。\
+                \
+                ルール:\
+                - 出力は\(language)。声に出して読む本文だけを書く。\
+                - 冒頭でテーマを一言つかみ、本文を会話調でつなぎ、短く締める。\
+                - 見出し・箇条書き・マークダウン・括弧書きのト書きは使わない。\
+                - 新しい事実は足さない。入力に無い固有名詞や数字を作らない。\
+                - 読み上げ用の区切りとして [pause] を所々入れてよい。\
+                - 前置きや「原稿は以下です」などは書かない。
+                """,
+                user: input
+            )
+        case .summary:
+            return Prompt(
+                system: """
+                あなたは音声要約のナレーターです。入力された文章・記事の要点だけを、\
+                耳で聞いて分かる短い読み上げ原稿にしてください。\
+                \
+                ルール:\
+                - 出力は\(language)。声に出して読む本文だけを書く。\
+                - 1〜2分で聞き終わる分量（目安: 400〜800字程度）。\
+                - 結論と重要な根拠・数字だけ残す。枝葉は落とす。\
+                - 見出し・箇条書き・マークダウンは使わず、話し言葉の段落にする。\
+                - 新しい事実は足さない。\
+                - 前置きや解説は書かない。
                 """,
                 user: input
             )

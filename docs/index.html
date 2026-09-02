@@ -3,20 +3,26 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>kupifa — 書いてる途中で、整える。</title>
-  <meta name="description" content="ホットキー一発で文章を整え、返事を書き、翻訳するmacOS用のAIパネル。GrokとClaudeを並べて比較でき、APIキーは自分のキーチェーンに置きます。">
+  <title>kupifa — 書く場所のまま、整える。</title>
+  <meta name="description" content="書いているアプリのまま ⌥ Space。文章を整える、返事を書く、翻訳する、音声で読む。macOS 用の AI パネルです。Grok へ直接つながるので、API キーは自分の Mac のキーチェーンに置いたまま使えます。">
   <meta name="theme-color" content="#08090c">
-  <meta property="og:title" content="kupifa — 書いてる途中で、整える。">
-  <meta property="og:description" content="メールの途中で⌥ Space。整える、返事、翻訳。GrokとClaudeを並べて選ぶ。">
+  <link rel="canonical" href="https://kupifa.pages.dev/">
+  <meta property="og:title" content="kupifa — 書く場所のまま、整える。">
+  <meta property="og:description" content="メールを書いている画面のまま ⌥ Space。整える、返事、翻訳、音声。Grok へ直接つながります。">
   <meta property="og:type" content="website">
+  <meta property="og:url" content="https://kupifa.pages.dev/">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:image" content="https://kupifa.pages.dev/app-icon.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="kupifa — 書く場所のまま、整える。">
+  <meta name="twitter:description" content="メールを書いている画面のまま ⌥ Space。整える、返事、翻訳、音声。Grok へ直接つながります。">
+  <meta name="twitter:image" content="https://kupifa.pages.dev/app-icon.png">
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./app-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;500;600&family=Shippori+Mincho:wght@500;600;700&family=Syne:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./styles.css">
-  <noscript>
-    <style>.will-reveal { opacity: 1; transform: none; }</style>
-  </noscript>
 </head>
 <body>
   <a class="skip-link" href="#main">本文へスキップ</a>
@@ -26,11 +32,7 @@
 
   <header class="nav">
     <a class="brand" href="#top">
-      <span class="brand-mark" aria-hidden="true">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-          <path d="M8 10.2A4.2 4.2 0 1 1 16.4 10.2c0 1.6-.9 3-2.3 3.7V17H12.4v-1.3h-1.6V17H8.9v-3.1A4.2 4.2 0 0 1 8 10.2Zm4.2-2.4a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8Z" fill="currentColor"/>
-        </svg>
-      </span>
+      <img class="brand-icon" src="./app-icon.png" width="28" height="28" alt="">
       kupifa
     </a>
     <nav class="nav-links" aria-label="ページ内">
@@ -49,15 +51,15 @@
     <section class="hero" id="top">
       <p class="eyebrow">
         <span class="chip">macOS</span>
-        <span class="chip">GROK · CLAUDE</span>
+        <span class="chip">GROK</span>
         <span class="chip">メニューバー</span>
       </p>
       <h1>
-        書いてる途中で、<em>整える。</em>
+        書く場所のまま、<em>整える。</em>
       </h1>
       <p class="lede">
-        メールの下書きを、チャット画面に持ち出す必要はない。<br>
-        <kbd>⌥ Space</kbd> でパネル、<kbd>⌘⏎</kbd> で投げる。<kbd>⌘⇧C</kbd> でコピーして、元の文に戻る。
+        メールの下書きを、チャット画面へ持ち出さなくていい。<br>
+        <kbd>⌥ Space</kbd> でパネルを開き、<kbd>⌘⏎</kbd> で投げる。<kbd>⌘⇧C</kbd> でコピーすれば、書いていた文へ戻る。
       </p>
       <div class="hero-actions">
         <a class="btn btn-download" href="/download">
@@ -69,31 +71,68 @@
         </a>
         <a class="btn btn-ghost" href="#flow">使い方を見る</a>
       </div>
-      <p class="hero-note">Grok と Claude を同時に投げて、並べて選べる。キーは自分のものをキーチェーンへ。</p>
+      <p class="hero-note">Grok へ直接つながる。API キーは自分のものを、キーチェーンへ。</p>
     </section>
 
-    <section class="stage will-reveal" aria-label="kupifaパネルの見本">
+    <section class="stage will-reveal" aria-label="kupifa パネルの見本">
       <div class="vault vault-panel">
         <div class="panel panel-hero">
           <div class="panel-chrome">
             <span>kupifa</span>
-            <span class="dots">全モデル · ⌥ Space</span>
+            <span class="dots">Grok · ⌥ Space</span>
           </div>
-          <div class="panel-modes">
-            <button type="button" class="mode is-on">文章を整える</button>
-            <button type="button" class="mode">返事作成</button>
-            <button type="button" class="mode">翻訳</button>
+          <div class="panel-modes" role="tablist" aria-label="モード">
+            <button type="button" class="mode is-on" data-mode="polish" role="tab" aria-selected="true">文章を整える</button>
+            <button type="button" class="mode" data-mode="reply" role="tab" aria-selected="false">返事作成</button>
+            <button type="button" class="mode" data-mode="translate" role="tab" aria-selected="false">翻訳</button>
+            <button type="button" class="mode" data-mode="speak" role="tab" aria-selected="false">音声で読む</button>
+            <span class="panel-speed">速さ優先</span>
           </div>
-          <div class="panel-body">
-            <p class="ghost-input">明日の打ち合わせ、少し遅れそうです。先に資料だけ共有しておきます。</p>
-            <div class="panel-results">
-              <div class="result-card">
-                <p class="result-meta">Claude</p>
-                <p data-role="claude">明日の打ち合わせに少々遅れる見込みです。恐れ入りますが、先に資料のみ共有いたします。</p>
+          <div class="panel-layout">
+            <aside class="panel-history" aria-label="履歴の見本">
+              <p class="panel-history-label">履歴</p>
+              <button type="button" class="history-item is-on" data-mode="polish">明日の打ち合わせ、少し遅れそうです。先に資料だけ…</button>
+              <button type="button" class="history-item" data-mode="reply">相手: 来週、火曜か水曜で30分いただけますか。</button>
+              <button type="button" class="history-item" data-mode="translate">Please find the attached deck for tomorrow's review.</button>
+              <button type="button" class="history-item" data-mode="speak">来週のリリースは遅れる見込みです。先に関係者へ…</button>
+            </aside>
+            <div class="panel-main">
+              <div class="speak-styles" hidden>
+                <button type="button" class="style-chip is-on" data-style="plain">ただ読む</button>
+                <button type="button" class="style-chip" data-style="radio">ラジオ風</button>
+                <button type="button" class="style-chip" data-style="summary">要約版</button>
+                <span class="voice-label">Eve</span>
               </div>
-              <div class="result-card">
-                <p class="result-meta">Grok</p>
+              <p class="ghost-input">明日の打ち合わせ、少し遅れそうです。先に資料だけ共有しておきます。</p>
+              <p class="drop-hint">テキストの貼り付け、または HTML / Markdown のドロップ</p>
+              <div class="panel-run">
+                <span class="run-btn" data-role="run">実行 ⌘⏎</span>
+                <span class="run-ghost">新規</span>
+              </div>
+            </div>
+            <div class="panel-results">
+              <div class="result-card" data-kind="text">
+                <div class="result-head">
+                  <p class="result-meta">Grok</p>
+                  <div class="lang-switch" role="group" aria-label="表示言語">
+                    <button type="button" class="lang-btn is-on" data-lang="ja">日</button>
+                    <button type="button" class="lang-btn" data-lang="en">EN</button>
+                  </div>
+                  <span class="copy-hint">コピー</span>
+                </div>
                 <p data-role="grok">明日の打ち合わせ、少し遅れる予定です。先に資料だけ共有します。</p>
+              </div>
+              <div class="result-card" data-kind="speak" hidden aria-hidden="true">
+                <div class="result-head">
+                  <p class="result-meta">Grok</p>
+                  <span class="copy-hint">コピー</span>
+                </div>
+                <div class="playback" aria-hidden="true">
+                  <span class="play-dot"></span>
+                  <span class="play-wave"></span>
+                  <span class="play-time">0:12 / 0:38</span>
+                </div>
+                <p data-role="speak-script">来週のリリースは遅れそうです。関係者には、先にお伝えしておきます。</p>
               </div>
             </div>
           </div>
@@ -105,55 +144,54 @@
       <p class="mono-label">01 — FLOW</p>
       <h2>ウィンドウを切り替えない。</h2>
       <p>
-        書いてるアプリはそのまま。パネルだけが手前に出る。<br>
-        整えて、コピーして、閉じる。チャットの履歴を漁る往復がない。
+        書いているアプリはそのまま。手前にパネルだけが開く。<br>
+        整えて、コピーして、閉じる。チャットの履歴をさかのぼる往復もない。
       </p>
+      <ol class="steps">
+        <li>
+          <p class="step-n">1</p>
+          <h3>書いている途中で呼ぶ</h3>
+          <p><kbd>⌥ Space</kbd> を押す。ほかのアプリで <kbd>⌘C</kbd> を続けて2回でも開く。選択していた文は、入力欄に入った状態で待っている。</p>
+        </li>
+        <li>
+          <p class="step-n">2</p>
+          <h3>モードを選んで投げる</h3>
+          <p>整える / 返事 / 翻訳 / 音声から選んで、<kbd>⌘⏎</kbd>。HTML や Markdown のファイルをドロップしても読み込める。</p>
+        </li>
+        <li>
+          <p class="step-n">3</p>
+          <h3>整った文を貼る</h3>
+          <p><kbd>⌘⇧C</kbd> で先頭の結果をコピー。パネルを閉じれば、書いていたメールに戻る。</p>
+        </li>
+      </ol>
     </section>
-
-    <ol class="steps flow-steps will-reveal">
-      <li>
-        <p class="step-n">1</p>
-        <h3>書いた途中で呼ぶ</h3>
-        <p><kbd>⌥ Space</kbd>。あるいは他のアプリで <kbd>⌘C</kbd> を続けて2回。選択中の文が、すでに入力欄に入った状態で開く。</p>
-      </li>
-      <li>
-        <p class="step-n">2</p>
-        <h3>モードを選んで投げる</h3>
-        <p>整える / 返事 / 翻訳。<kbd>⌘⏎</kbd>。Grok だけ、Claude だけ、あるいは両方に同時。</p>
-      </li>
-      <li>
-        <p class="step-n">3</p>
-        <h3>通った文を貼る</h3>
-        <p><kbd>⌘⇧C</kbd> で先頭の結果をコピー。パネルを閉じて、元のメールに戻る。</p>
-      </li>
-    </ol>
 
     <section class="guarantees will-reveal" id="product">
       <div class="section-head">
         <p class="mono-label">02 — DOES</p>
-        <h2>メールの途中で、足りる。</h2>
-        <p class="section-lead">前置きも解説も出さない。整えた本文だけが返ってくる。</p>
+        <h2>メールの途中で、用が済む。</h2>
+        <p class="section-lead">前置きも解説も返さない。そのまま貼れる本文だけが返ってくる。</p>
       </div>
       <div class="bento">
         <article class="card span-2">
           <p class="card-kicker">⌘1 · 文章を整える</p>
           <h3>口語のメモが、送れる文になる。</h3>
-          <p>意味は変えない。誤字と、回りくどい言い方だけ直す。社内メールの下書きを、その場で通すためのモード。</p>
+          <p>意味は変えず、誤字と回りくどい言い方だけを直す。社内メールの下書きを、その場で送れる形にするモード。</p>
         </article>
         <article class="card">
           <p class="card-kicker">⌘2 · 返事作成</p>
-          <h3>相手の文に、返す。</h3>
-          <p>届いた原文と、返したい要点の走り書きを入れる。質問の漏れがない返信になる。</p>
+          <h3>相手の文に合わせて、返す。</h3>
+          <p>届いた原文と、返したい要点の走り書きを一緒に入れる。相手の質問を取りこぼさない返信になる。</p>
         </article>
         <article class="card">
           <p class="card-kicker">⌘3 · 翻訳</p>
           <h3>トーンを残して、日英。</h3>
-          <p>結果カードで 日 ⇄ EN。まだ無い言語は、その場で足せる。</p>
+          <p>結果カードで 日 ⇄ EN を切り替える。まだ無い言語は、その場で生成する。設定で両方を先に作っておけば、切り替えを待たない。</p>
         </article>
         <article class="card span-4 dark">
-          <p class="card-kicker">⌘M · 全モデル</p>
-          <h3>Grok と Claude を、並べて見る。</h3>
-          <p>登録したモデルへ同時に投げて、カードで比較する。どっちが通るかは、チャットを2つ開かなくても決まる。</p>
+          <p class="card-kicker">⌘4 · 音声で読む</p>
+          <h3>貼った文を、Grok が読み上げる。</h3>
+          <p>そのまま読む、ラジオ風、要約版の3通り。HTML や Markdown をドロップした記事も、その場で耳から追える。声は Eve / Ara / Rex / Sal / Leo。</p>
         </article>
       </div>
     </section>
@@ -168,28 +206,28 @@
           <span>01</span>
           <div>
             <h3>メニューバー常駐</h3>
-            <p>Dockには出ない。必要なときだけ、Spotlightみたいなパネル。</p>
+            <p>Dock には並ばない。必要なときだけ、Spotlight のようにパネルが開く。</p>
           </div>
         </li>
         <li>
           <span>02</span>
           <div>
             <h3>ダブルコピー起動</h3>
-            <p>他のアプリで <kbd>⌘C</kbd> を2回。選択テキストを入れて開く。</p>
+            <p>ほかのアプリで <kbd>⌘C</kbd> を2回。コピーした文を入れた状態で開く。</p>
           </div>
         </li>
         <li>
           <span>03</span>
           <div>
-            <h3>日英を同時に生成</h3>
-            <p>設定をオンにすると、実行時に両方作っておく。スイッチが待ち時間にならない。</p>
+            <h3>HTML / Markdown ドロップ</h3>
+            <p>下書きのファイルや記事を入力欄へ落とすと、本文だけを取り出して読み込む。</p>
           </div>
         </li>
         <li>
           <span>04</span>
           <div>
             <h3>履歴はサイドバー</h3>
-            <p><kbd>⌘0</kbd>。さっき整えた指示と結果を、クリックで戻せる。</p>
+            <p><kbd>⌘0</kbd> で開閉する。前に整えた指示と結果は、クリックで戻せる。</p>
           </div>
         </li>
       </ul>
@@ -199,43 +237,37 @@
       <div class="section-head">
         <p class="mono-label">04 — KEYS</p>
         <h2>キーは、自分のものを使う。</h2>
-        <p class="section-lead">xAI と Anthropic のコンソールで発行して、設定に置く。kupifaは預からない。通信はあなたのMacから各APIへ直通。</p>
+        <p class="section-lead">xAI のコンソールで発行して、設定に保存する。kupifa がキーを預かることはない。通信は、あなたの Mac から Grok の API へ直接つながる。</p>
       </div>
 
-      <div class="flow" role="img" aria-label="あなたのMacからGrokとClaudeへ直接接続。kupifaサーバーは経路に含まれない">
+      <div class="flow" role="img" aria-label="あなたの Mac から Grok へ直接つながる。kupifa のサーバーは経路に含まれない">
         <article class="node node-mac">
           <span class="node-id">YOU</span>
           <h3>Your Mac</h3>
-          <p>キーはキーチェーン。<br>履歴もこの端末。</p>
+          <p>キーはキーチェーンの中。<br>履歴もこの Mac の中。</p>
           <div class="key-pills">
             <span>xai-…</span>
-            <span>sk-ant-…</span>
           </div>
         </article>
 
         <div class="pipes" aria-hidden="true">
           <span class="packet p1"></span>
           <span class="packet p2"></span>
-          <span class="pipe-label">TLS 直接</span>
+          <span class="pipe-label">TLS で直接</span>
         </div>
 
         <div class="providers">
           <article class="node node-provider">
             <span class="node-id">DIRECT</span>
             <h3>xAI / Grok</h3>
-            <p>api.x.ai へ直通</p>
-          </article>
-          <article class="node node-provider">
-            <span class="node-id">DIRECT</span>
-            <h3>Anthropic / Claude</h3>
-            <p>api.anthropic.com へ直通</p>
+            <p>api.x.ai へ直接 · チャットと音声</p>
           </article>
         </div>
 
         <article class="node node-void">
           <span class="node-id">ABSENT</span>
           <h3>kupifa のサーバー</h3>
-          <p>中継しない。入力もキーも、運営には来ない。</p>
+          <p>中継しない。入力した文もキーも、運営側には届かない。</p>
           <div class="void-meter">
             <span>IN</span>
             <strong id="bytes">0</strong>
@@ -256,20 +288,18 @@
           <h3>キーを取る</h3>
           <p>
             <a href="https://console.x.ai" rel="noopener noreferrer" target="_blank">xAI</a>
-            と
-            <a href="https://console.anthropic.com" rel="noopener noreferrer" target="_blank">Anthropic</a>
-            で発行する。kupifaに送る画面はない。
+            のコンソールで発行する。kupifa へ送信する画面はない。
           </p>
         </li>
         <li>
           <p class="step-n">2</p>
-          <h3>設定に保存</h3>
-          <p>メニューバーの ✨ → 設定。キーは macOS のキーチェーンへ。</p>
+          <h3>設定に保存する</h3>
+          <p>メニューバーのマークから設定を開く。キーは macOS のキーチェーンに保存される。</p>
         </li>
         <li>
           <p class="step-n">3</p>
-          <h3>書いてる途中で呼ぶ</h3>
-          <p><kbd>⌥ Space</kbd>。整える、返事、翻訳。通った文をコピーして戻る。</p>
+          <h3>書いている途中で呼ぶ</h3>
+          <p><kbd>⌥ Space</kbd> でパネルを開く。整える、返事、翻訳、音声。整った文をコピーして戻る。</p>
         </li>
       </ol>
       <div class="cta-row">
@@ -280,15 +310,14 @@
             <small>macOS 15+</small>
           </span>
         </a>
-        <a class="btn btn-ghost" href="https://github.com/gupuru/kupifa" rel="noopener noreferrer" target="_blank">GitHub でソースを見る</a>
-        <p class="cta-note">macOS 15+ · メニューバー常駐 · アクセシビリティ許可が必要</p>
+        <p class="cta-note">macOS 15 以降 · メニューバー常駐 · アクセシビリティの許可が必要</p>
       </div>
     </section>
   </main>
 
   <footer class="foot">
-    <p>kupifa — 書いてる途中で、整える。</p>
-    <p class="foot-meta">キーは端末に置く · 運営は中継しない</p>
+    <p>kupifa — 書く場所のまま、整える。</p>
+    <p class="foot-meta">キーは端末の中 · 運営は中継しない</p>
   </footer>
 
   <script src="./app.js"></script>

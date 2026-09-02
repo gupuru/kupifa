@@ -100,4 +100,19 @@ enum KeychainStore {
         else { return nil }
         return key
     }
+
+    /// このサービスに保存した API キーをすべて削除する
+    static func deleteAllAPIKeys() {
+        for provider in AIProvider.allCases {
+            _ = deleteAPIKey(for: provider)
+        }
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+        ]
+        SecItemDelete(query as CFDictionary)
+        lock.lock()
+        cache.removeAll()
+        lock.unlock()
+    }
 }

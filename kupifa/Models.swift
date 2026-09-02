@@ -12,6 +12,7 @@ enum ActionMode: String, CaseIterable, Identifiable {
     case polish
     case reply
     case translate
+    case speak
     case search
 
     var id: String { rawValue }
@@ -26,6 +27,7 @@ enum ActionMode: String, CaseIterable, Identifiable {
         case .polish: "文章を整える"
         case .reply: "返事作成"
         case .translate: "翻訳"
+        case .speak: "音声で読む"
         case .search: "検索"
         }
     }
@@ -35,18 +37,57 @@ enum ActionMode: String, CaseIterable, Identifiable {
         case .polish: "wand.and.stars"
         case .reply: "bubble.left.and.bubble.right"
         case .translate: "globe"
+        case .speak: "speaker.wave.2"
         case .search: "magnifyingglass"
         }
     }
 
-    /// ⌘1 / ⌘2 / ⌘3 で切り替え（表示中のモードのみ）
+    /// ⌘1 / ⌘2 / ⌘3 / ⌘4 で切り替え（表示中のモードのみ）
     var shortcutKey: Character? {
         switch self {
         case .polish: "1"
         case .reply: "2"
         case .translate: "3"
+        case .speak: "4"
         case .search: nil
         }
+    }
+
+    /// Web検索・音声読み上げは Grok のみ
+    var requiresGrok: Bool {
+        self == .search || self == .speak
+    }
+}
+
+// MARK: - 音声読み上げのスタイル（Grok TTS）
+
+enum SpeakStyle: String, CaseIterable, Identifiable {
+    case plain
+    case radio
+    case summary
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .plain: "ただ読む"
+        case .radio: "ラジオ風"
+        case .summary: "要約版"
+        }
+    }
+}
+
+enum GrokVoice: String, CaseIterable, Identifiable {
+    case eve
+    case ara
+    case rex
+    case sal
+    case leo
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        rawValue.capitalized
     }
 }
 
@@ -54,32 +95,11 @@ enum ActionMode: String, CaseIterable, Identifiable {
 
 enum AIProvider: String, CaseIterable, Identifiable {
     case grok
-    case claude
 
     var id: String { rawValue }
-
-    var displayName: String {
-        switch self {
-        case .grok: "Grok"
-        case .claude: "Claude"
-        }
-    }
-
-    /// 品質優先時のデフォルトモデル
-    var defaultModel: String {
-        switch self {
-        case .grok: "grok-4.5"
-        case .claude: "claude-sonnet-4-5"
-        }
-    }
-
-    /// 速さ優先時のデフォルトモデル
-    var fastModel: String {
-        switch self {
-        case .grok: "grok-4.5"
-        case .claude: "claude-haiku-4-5"
-        }
-    }
+    var displayName: String { "Grok" }
+    var defaultModel: String { "grok-4.6" }
+    var fastModel: String { "grok-4.6" }
 
     /// カスタムモデルが無ければ、速さ優先設定に応じたデフォルトを返す
     func resolvedModel(preferSpeed: Bool) -> String {
@@ -91,18 +111,8 @@ enum AIProvider: String, CaseIterable, Identifiable {
         return preferSpeed ? fastModel : defaultModel
     }
 
-    /// Web検索モードに対応しているのはGrokのみ
-    var supportsSearch: Bool { self == .grok }
-
     var modelDefaultsKey: String { "model.\(rawValue)" }
-
-    /// 設定画面に表示するAPIキー取得先
-    var apiKeyHint: String {
-        switch self {
-        case .grok: "https://console.x.ai"
-        case .claude: "https://console.anthropic.com"
-        }
-    }
+    var apiKeyHint: String { "https://console.x.ai" }
 }
 
 // MARK: - 出力言語
@@ -125,6 +135,14 @@ enum OutputLanguage: String, CaseIterable, Identifiable {
         switch self {
         case .japanese: "日本語"
         case .english: "英語"
+        }
+    }
+
+    /// Grok TTS の language パラメータ
+    var ttsLanguageCode: String {
+        switch self {
+        case .japanese: "ja"
+        case .english: "en"
         }
     }
 
@@ -152,6 +170,15 @@ enum HotKeyOption: String, CaseIterable, Identifiable {
         }
     }
 
+    var compactLabel: String {
+        switch self {
+        case .optionSpace: "⌥ Space"
+        case .commandShiftSpace: "⌘⇧ Space"
+        case .controlSpace: "⌃ Space"
+        case .commandSpace: "⌘ Space"
+        }
+    }
+
     var keyCode: UInt32 { UInt32(kVK_Space) }
 
     var carbonModifiers: UInt32 {
@@ -173,11 +200,24 @@ enum HotKeyOption: String, CaseIterable, Identifiable {
 
 enum SettingsKeys {
     static let hotKey = "hotKeyOption"
-    static let defaultProvider = "defaultProvider"
     static let outputLanguage = "outputLanguage"
     static let generateBothLanguages = "generateBothLanguages"
     /// 速さ優先（速いモデル・短い出力上限）。未設定時は true
     static let preferSpeed = "preferSpeed"
     /// ⌘C 二連続でパネルを開く。未設定時は true
     static let openOnDoubleCopy = "openOnDoubleCopy"
+    static let speakStyle = "speakStyle"
+    static let grokVoice = "grokVoice"
+
+    static var all: [String] {
+        [
+            hotKey,
+            outputLanguage,
+            generateBothLanguages,
+            preferSpeed,
+            openOnDoubleCopy,
+            speakStyle,
+            grokVoice,
+        ]
+    }
 }

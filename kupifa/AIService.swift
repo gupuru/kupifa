@@ -2,23 +2,20 @@
 //  AIService.swift
 //  kupifa
 //
-//  Grok / Claude のAPIを直接叩く薄いクライアント（SSEストリーミング対応）。
+//  Grok APIを直接叩く薄いクライアント（SSEストリーミング・TTS対応）。
 //
 
 import Foundation
 
 enum AIServiceError: LocalizedError {
-    case missingAPIKey(AIProvider)
-    case searchNotSupported(AIProvider)
+    case missingAPIKey
     case httpError(statusCode: Int, body: String)
     case emptyResponse
 
     var errorDescription: String? {
         switch self {
-        case .missingAPIKey(let provider):
-            "\(provider.displayName) のAPIキーが未設定です。設定画面（⌘,）から登録してください。"
-        case .searchNotSupported(let provider):
-            "検索モードは Grok のみ対応です（現在: \(provider.displayName)）。"
+        case .missingAPIKey:
+            "Grok のAPIキーが未設定です。設定画面（⌘,）から登録してください。"
         case .httpError(let statusCode, let body):
             "APIエラー（HTTP \(statusCode)）: \(body.prefix(300))"
         case .emptyResponse:
@@ -53,62 +50,105 @@ struct AIService {
 
     /// APIホストへのTLSを先に張っておく（パネル表示時・起動時）
     static func warmConnections() {
-        let hosts = [
-            "https://api.x.ai",
-            "https://api.anthropic.com",
-        ]
-        for host in hosts {
-            guard let url = URL(string: host) else { continue }
-            var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 8)
-            request.httpMethod = "HEAD"
-            session.dataTask(with: request).resume()
-        }
+        guard let url = URL(string: "https://api.x.ai") else { return }
+        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 8)
+        request.httpMethod = "HEAD"
+        session.dataTask(with: request).resume()
     }
 
     static func stream(
         prompt: PromptBuilder.Prompt,
-        provider: AIProvider,
         mode: ActionMode,
         onEvent: EventHandler? = nil
     ) async throws -> String {
-        if mode == .search && !provider.supportsSearch {
-            throw AIServiceError.searchNotSupported(provider)
-        }
-        guard let apiKey = KeychainStore.apiKey(for: provider) else {
-            throw AIServiceError.missingAPIKey(provider)
+        guard let apiKey = KeychainStore.apiKey(for: .grok) else {
+            throw AIServiceError.missingAPIKey
         }
 
         let preferSpeed = UserDefaults.standard.object(forKey: SettingsKeys.preferSpeed) as? Bool ?? true
-        let model = provider.resolvedModel(preferSpeed: preferSpeed)
+        let model = AIProvider.grok.resolvedModel(preferSpeed: preferSpeed)
         let maxTokens = Self.maxTokens(mode: mode, preferSpeed: preferSpeed)
 
-        switch provider {
-        case .grok:
-            return try await streamGrok(
-                prompt: prompt,
-                apiKey: apiKey,
-                model: model,
-                enableSearch: mode == .search,
-                preferSpeed: preferSpeed,
-                maxTokens: maxTokens,
-                onEvent: onEvent
-            )
-        case .claude:
-            return try await streamClaude(
-                prompt: prompt,
-                apiKey: apiKey,
-                model: model,
-                maxTokens: maxTokens,
-                onEvent: onEvent
-            )
-        }
+        return try await streamGrok(
+            prompt: prompt,
+            apiKey: apiKey,
+            model: model,
+            enableSearch: mode == .search,
+            preferSpeed: preferSpeed,
+            maxTokens: maxTokens,
+            onEvent: onEvent
+        )
     }
 
     private static func maxTokens(mode: ActionMode, preferSpeed: Bool) -> Int {
         switch mode {
-        case .search: preferSpeed ? 2048 : 4096
+        case .search, .speak: preferSpeed ? 2048 : 4096
         default: preferSpeed ? 1024 : 2048
         }
+    }
+
+    // MARK: - Grok TTS
+
+    /// 読み上げ原稿を音声データ（MP3）のチャンク列に変換する。最初のチャンクから順に `onChunk` へ渡す。
+    static func synthesizeSpeech(
+        text: String,
+        language: OutputLanguage,
+        voice: GrokVoice,
+        onChunk: (@Sendable (Data, Int, Int) -> Void)? = nil
+    ) async throws -> [Data] {
+        guard let apiKey = KeychainStore.apiKey(for: .grok) else {
+            throw AIServiceError.missingAPIKey
+        }
+        let chunks = TextChunker.split(text)
+        guard !chunks.isEmpty else { throw AIServiceError.emptyResponse }
+
+        var audio: [Data] = []
+        for (index, chunk) in chunks.enumerated() {
+            try Task.checkCancellation()
+            let data = try await requestTTS(
+                text: chunk,
+                language: language,
+                voice: voice,
+                apiKey: apiKey
+            )
+            audio.append(data)
+            onChunk?(data, index, chunks.count)
+        }
+        return audio
+    }
+
+    private static func requestTTS(
+        text: String,
+        language: OutputLanguage,
+        voice: GrokVoice,
+        apiKey: String
+    ) async throws -> Data {
+        let body: [String: Any] = [
+            "text": text,
+            "voice_id": voice.rawValue,
+            "language": language.ttsLanguageCode,
+            "text_normalization": true,
+            "output_format": [
+                "codec": "mp3",
+                "sample_rate": 24000,
+                "bit_rate": 128000,
+            ],
+        ]
+
+        var request = URLRequest(url: URL(string: "https://api.x.ai/v1/tts")!)
+        request.httpMethod = "POST"
+        request.timeoutInterval = 120
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (data, response) = try await session.data(for: request)
+        if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+            let body = String(data: data, encoding: .utf8) ?? ""
+            throw AIServiceError.httpError(statusCode: http.statusCode, body: body)
+        }
+        guard !data.isEmpty else { throw AIServiceError.emptyResponse }
+        return data
     }
 
     // MARK: - Grok (x.ai / OpenAI互換 Chat Completions)
@@ -134,11 +174,11 @@ struct AIService {
         if enableSearch {
             body["search_parameters"] = ["mode": "on", "return_citations": true]
         }
-        // 速さ優先時は reasoning を抑える（4.5 は none 不可のため low）
+        // 速さ優先時は reasoning を抑える（4.5 / 4.6 は none 不可のため low）
         if preferSpeed {
             if model.contains("grok-4.3") {
                 body["reasoning_effort"] = "none"
-            } else if model.contains("grok-4.5") {
+            } else if model.contains("grok-4.5") || model.contains("grok-4.6") {
                 body["reasoning_effort"] = "low"
             }
         }
@@ -179,51 +219,6 @@ struct AIService {
             let sources = citationBox.values.prefix(5).map { "- \($0)" }.joined(separator: "\n")
             return text + "\n\n参照元:\n" + sources
         }
-        return text
-    }
-
-    // MARK: - Claude (Anthropic Messages API)
-
-    private static func streamClaude(
-        prompt: PromptBuilder.Prompt,
-        apiKey: String,
-        model: String,
-        maxTokens: Int,
-        onEvent: EventHandler?
-    ) async throws -> String {
-        let body: [String: Any] = [
-            "model": model,
-            "max_tokens": maxTokens,
-            "stream": true,
-            "system": prompt.system,
-            "messages": [
-                ["role": "user", "content": prompt.user]
-            ],
-        ]
-
-        let text = try await streamSSE(
-            url: URL(string: "https://api.anthropic.com/v1/messages")!,
-            headers: [
-                "x-api-key": apiKey,
-                "anthropic-version": "2023-06-01",
-            ],
-            body: body,
-            onEvent: onEvent
-        ) { json, emitThinking in
-            let type = json["type"] as? String
-            if type == "message_start" || type == "content_block_start" {
-                emitThinking()
-            }
-            guard
-                type == "content_block_delta",
-                let delta = json["delta"] as? [String: Any],
-                let text = delta["text"] as? String,
-                !text.isEmpty
-            else { return nil }
-            return text
-        }
-
-        guard !text.isEmpty else { throw AIServiceError.emptyResponse }
         return text
     }
 

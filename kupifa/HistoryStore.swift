@@ -40,7 +40,7 @@ struct HistoryEntry: Identifiable, Codable, Equatable {
 }
 
 enum HistoryStore {
-    private static let key = "instructionHistory"
+    static let key = "instructionHistory"
     private static let maxEntries = 50
     private static let saveQueue = DispatchQueue(label: "com.kupifa.history", qos: .utility)
 
@@ -65,6 +65,13 @@ enum HistoryStore {
             if let data = try? JSONEncoder().encode(trimmed) {
                 UserDefaults.standard.set(data, forKey: key)
             }
+        }
+    }
+
+    /// 非同期保存の完了を待ってから消す（リセット直後の書き戻しを防ぐ）
+    static func clear() {
+        saveQueue.sync {
+            UserDefaults.standard.removeObject(forKey: key)
         }
     }
 

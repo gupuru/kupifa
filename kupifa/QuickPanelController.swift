@@ -57,6 +57,7 @@ final class QuickPanelController {
         }
 
         NSApp.activate(ignoringOtherApps: true)
+        panel.level = .floating
         panel.makeKeyAndOrderFront(nil)
 
         if let prefill, !prefill.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -69,6 +70,43 @@ final class QuickPanelController {
 
     func hide() {
         panel?.orderOut(nil)
+    }
+
+    /// 設定を開く。フローティングパネルは閉じない。
+    func presentSettings(_ openSettings: () -> Void) {
+        keepVisibleForInternalWindows()
+        NSApp.activate(ignoringOtherApps: true)
+        openSettings()
+    }
+
+    /// 設定などアプリ内ウィンドウを開くあいだは、他アプリ切替でパネルが消えないようにする。
+    func keepVisibleForInternalWindows() {
+        panel?.hidesOnDeactivate = false
+        panel?.level = .normal
+    }
+
+    func restoreHidesOnDeactivateIfNeeded() {
+        let otherTitled = NSApp.windows.contains { window in
+            window.isVisible
+                && !isPanelWindow(window)
+                && window.styleMask.contains(.titled)
+        }
+        if !otherTitled {
+            panel?.hidesOnDeactivate = true
+            panel?.level = .floating
+        }
+    }
+
+    func promoteFloatingLevel() {
+        panel?.level = .floating
+    }
+
+    var isVisible: Bool {
+        panel?.isVisible == true
+    }
+
+    func isPanelWindow(_ window: NSWindow) -> Bool {
+        window === panel
     }
 
     private func makePanel() -> KeyablePanel {
@@ -89,14 +127,33 @@ final class QuickPanelController {
         panel.backgroundColor = .clear
         panel.isOpaque = false
         panel.hasShadow = true
+        panel.appearance = NSAppearance(named: .darkAqua)
         panel.standardWindowButton(.closeButton)?.isHidden = true
         panel.standardWindowButton(.miniaturizeButton)?.isHidden = true
         panel.standardWindowButton(.zoomButton)?.isHidden = true
 
-        let hosting = NSHostingView(rootView: QuickInputView(onClose: { [weak self] in
+        let hosting = ClearHostingView(rootView: QuickInputView(onClose: { [weak self] in
             self?.hide()
         }))
+        hosting.appearance = NSAppearance(named: .darkAqua)
         panel.contentView = hosting
         return panel
+    }
+}
+
+/// SwiftUI の角丸の外に黒矩形が残らないよう、ホストビュー自体を透明にする
+private final class ClearHostingView<Content: View>: NSHostingView<Content> {
+    override var isOpaque: Bool { false }
+
+    required init(rootView: Content) {
+        super.init(rootView: rootView)
+        wantsLayer = true
+        layer?.isOpaque = false
+        layer?.backgroundColor = NSColor.clear.cgColor
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
     }
 }

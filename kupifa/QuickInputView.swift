@@ -3,10 +3,11 @@
 //  kupifa
 //
 //  ホットキーで表示されるメインのフォーム画面。
-//  背景はシステム外観に追従した不透明2パターン（ライト: 白 / ダーク: 黒）。
+//  LPと同じダーク＋ライムの不透明パネル。
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 // MARK: - 実行結果（プロバイダごと）
 
@@ -60,8 +61,6 @@ struct QuickInputView: View {
     var onClose: () -> Void
 
     @State private var mode: ActionMode = .polish
-    @State private var provider: AIProvider = defaultProvider()
-    @State private var runAllModels = false
     @State private var inputText = ""
     /// IME変換中の未確定文字も含めて、入力欄に何か表示されているか
     @State private var editorHasText = false
@@ -75,20 +74,28 @@ struct QuickInputView: View {
     @State private var currentHistoryID: UUID?
     @State private var history: [HistoryEntry] = HistoryStore.load()
     @State private var showHistory = true
+    @State private var isDropTargeted = false
+    @State private var dropMessage: String?
+    @State private var speechError: String?
+    @State private var isSynthesizingSpeech = false
+    @State private var speechGeneration = UUID()
+    @StateObject private var speechPlayer = SpeechPlayer()
 
     @AppStorage(SettingsKeys.outputLanguage) private var outputLanguageRaw = OutputLanguage.japanese.rawValue
     @AppStorage(SettingsKeys.generateBothLanguages) private var generateBothLanguages = false
     @AppStorage(SettingsKeys.preferSpeed) private var preferSpeed = true
+    @AppStorage(SettingsKeys.speakStyle) private var speakStyleRaw = SpeakStyle.plain.rawValue
+    @AppStorage(SettingsKeys.grokVoice) private var grokVoiceRaw = GrokVoice.eve.rawValue
 
     @FocusState private var inputFocused: Bool
-    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.openSettings) private var openSettings
 
     private var outputLanguage: OutputLanguage {
         OutputLanguage(rawValue: outputLanguageRaw) ?? .japanese
     }
 
     private var isLoading: Bool {
-        runs.contains { run in
+        isSynthesizingSpeech || runs.contains { run in
             run.states.values.contains { $0.isInProgress }
         }
     }
@@ -101,15 +108,21 @@ struct QuickInputView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            chrome
             header
-            Divider()
-                .opacity(0.4)
+            KupifaTheme.line.frame(height: 1)
             content
         }
         .frame(minWidth: panelMinWidth, minHeight: 440)
+        .foregroundStyle(KupifaTheme.ink)
+        .preferredColorScheme(.dark)
         .background(panelBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .onAppear { inputFocused = true }
-        .onDisappear { cancelRunningTasks() }
+        .onDisappear {
+            cancelRunningTasks()
+            speechPlayer.reset()
+        }
         .onReceive(NotificationCenter.default.publisher(for: .kupifaPrefillInput)) { note in
             guard let text = note.object as? String,
                   !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -119,25 +132,70 @@ struct QuickInputView: View {
         .background { hiddenShortcuts }
     }
 
-    // MARK: - 背景（ライト: 白 / ダーク: 黒）
+    // MARK: - 背景（LPと同じダーク）
 
     private var panelBackground: some View {
         RoundedRectangle(cornerRadius: 16, style: .continuous)
-            .fill(colorScheme == .dark ? Color.black : Color.white)
+            .fill(KupifaTheme.bg)
             .overlay {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .strokeBorder(Color.primary.opacity(0.15), lineWidth: 1)
+                    .strokeBorder(KupifaTheme.line, lineWidth: 1)
             }
     }
 
-    /// 入力欄・結果カードの面
-    private func innerSurface(cornerRadius: CGFloat = 12) -> some View {
+    /// 入力欄・履歴の面
+    private func innerSurface(cornerRadius: CGFloat = 12, highlighted: Bool = false) -> some View {
         RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-            .fill(Color.primary.opacity(0.06))
+            .fill(KupifaTheme.surface)
             .overlay {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+                    .strokeBorder(highlighted ? KupifaTheme.lime.opacity(0.35) : KupifaTheme.line, lineWidth: 1)
             }
+    }
+
+    private func pillBackground(selected: Bool) -> some View {
+        Capsule()
+            .fill(selected ? KupifaTheme.limeDim : Color.clear)
+            .overlay {
+                Capsule().strokeBorder(
+                    selected ? KupifaTheme.lime : Color.clear,
+                    lineWidth: 1
+                )
+            }
+    }
+
+    // MARK: - クローム
+
+    private var chrome: some View {
+        HStack(spacing: 10) {
+            Text("kupifa")
+                .font(.subheadline.weight(.semibold))
+                .tracking(0.4)
+            Spacer()
+            Text("Grok · \(HotKeyOption.current.compactLabel)")
+                .font(.caption)
+                .foregroundStyle(KupifaTheme.muted)
+            Button(action: onClose) {
+                HStack(spacing: 4) {
+                    Image(systemName: "xmark")
+                    Text("閉じる")
+                }
+                .font(.caption)
+                .foregroundStyle(KupifaTheme.muted)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background {
+                    Capsule()
+                        .strokeBorder(KupifaTheme.line, lineWidth: 1)
+                }
+            }
+            .buttonStyle(.plain)
+            .help("パネルを閉じる（Esc）")
+            .keyboardShortcut(.escape, modifiers: [])
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 12)
+        .padding(.bottom, 4)
     }
 
     // MARK: - ヘッダー（モード切替・実行対象）
@@ -148,6 +206,7 @@ struct QuickInputView: View {
                 showHistory.toggle()
             } label: {
                 Image(systemName: "sidebar.left")
+                    .foregroundStyle(showHistory ? KupifaTheme.lime : KupifaTheme.muted)
             }
             .buttonStyle(.plain)
             .keyboardShortcut("0", modifiers: .command)
@@ -157,19 +216,12 @@ struct QuickInputView: View {
                 Button {
                     switchMode(to: m)
                 } label: {
-                    Label(m.title, systemImage: m.icon)
-                        .padding(.horizontal, 11)
+                    Text(m.title)
+                        .font(.caption)
+                        .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .background {
-                            Capsule()
-                                .fill(mode == m ? Color.accentColor.opacity(0.3) : Color.primary.opacity(0.05))
-                                .overlay {
-                                    Capsule().strokeBorder(
-                                        mode == m ? Color.accentColor.opacity(0.5) : Color.primary.opacity(0.08),
-                                        lineWidth: 1
-                                    )
-                                }
-                        }
+                        .foregroundStyle(mode == m ? KupifaTheme.lime : KupifaTheme.muted)
+                        .background { pillBackground(selected: mode == m) }
                 }
                 .buttonStyle(.plain)
                 .modifier(ModeShortcutModifier(key: m.shortcutKey))
@@ -178,51 +230,36 @@ struct QuickInputView: View {
 
             Spacer()
 
-            Toggle(isOn: $preferSpeed) {
+            Button {
+                preferSpeed.toggle()
+            } label: {
                 Text("速さ優先")
+                    .font(.caption)
+                    .foregroundStyle(preferSpeed ? KupifaTheme.lime : KupifaTheme.muted)
             }
-            .toggleStyle(.checkbox)
+            .buttonStyle(.plain)
             .help("高速モデルと短い出力上限を使う（⌘F）")
 
-            Toggle(isOn: $runAllModels) {
-                Text("全モデル")
-            }
-            .toggleStyle(.checkbox)
-            .disabled(mode == .search)
-            .help("⌘M: 全モデル同時実行の切り替え（検索はGrokのみ・遅くなる）")
-
-            if !runAllModels || mode == .search {
-                Picker("", selection: $provider) {
-                    ForEach(availableProviders) { p in
-                        Text(p.displayName).tag(p)
-                    }
-                }
-                .pickerStyle(.menu)
-                .fixedSize()
-                .help("⌘P で切り替え")
-            }
-
-            SettingsLink {
+            Button {
+                QuickPanelController.shared.presentSettings { openSettings() }
+            } label: {
                 Image(systemName: "gearshape")
+                    .foregroundStyle(KupifaTheme.muted)
             }
             .buttonStyle(.plain)
             .keyboardShortcut(",", modifiers: .command)
             .help("設定を開く（⌘,）")
         }
         .padding(.horizontal, 14)
-        .padding(.top, 12)
+        .padding(.top, 8)
         .padding(.bottom, 10)
     }
 
     /// 見た目を持たないショートカット専用ボタン群
     private var hiddenShortcuts: some View {
         Group {
-            Button("", action: toggleRunAllModels)
-                .keyboardShortcut("m", modifiers: .command)
             Button("", action: { preferSpeed.toggle() })
                 .keyboardShortcut("f", modifiers: .command)
-            Button("", action: cycleProvider)
-                .keyboardShortcut("p", modifiers: .command)
             Button("", action: clearAll)
                 .keyboardShortcut("k", modifiers: .command)
             Button("", action: copyFirstResult)
@@ -238,32 +275,36 @@ struct QuickInputView: View {
     // MARK: - 本体
 
     private var inputEditor: some View {
-        ZStack(alignment: .topLeading) {
-            TextEditor(text: $inputText)
-                .font(.system(size: 14))
-                .scrollContentBackground(.hidden)
-                .focused($inputFocused)
-
-            if inputText.isEmpty && !editorHasText {
-                // 同じTextEditorを重ねることで、テキスト開始位置（インセット）を完全に一致させる
-                TextEditor(text: .constant(placeholder))
-                    .font(.system(size: 14))
-                    .foregroundStyle(.secondary)
-                    .scrollContentBackground(.hidden)
-                    .disabled(true)
-                    .allowsHitTesting(false)
-            }
-        }
+        PlaceholderTextEditor(
+            text: $inputText,
+            placeholder: placeholder,
+            isFocused: inputFocused,
+            onHasContentChange: { editorHasText = $0 }
+        )
+        .focused($inputFocused)
         .padding(8)
         .frame(minHeight: 90)
         .background(innerSurface())
-        // SwiftUIのバインディングはIME変換確定まで更新されないため、
-        // NSTextViewの変更通知（未確定文字でも発火する）でプレースホルダーを即座に消す
-        .onReceive(NotificationCenter.default.publisher(for: NSText.didChangeNotification)) { note in
-            guard let textView = note.object as? NSTextView,
-                  textView.window is NSPanel else { return }
-            editorHasText = !textView.string.isEmpty || textView.hasMarkedText()
+        .overlay {
+            if isDropTargeted {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(KupifaTheme.lime, style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
+                    .background {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(KupifaTheme.limeDim)
+                    }
+                    .overlay {
+                        VStack(spacing: 6) {
+                            Image(systemName: "doc.text")
+                            Text("HTML / Markdown をドロップ")
+                                .font(.caption)
+                        }
+                        .foregroundStyle(KupifaTheme.muted)
+                    }
+                    .allowsHitTesting(false)
+            }
         }
+        .onDrop(of: [.fileURL], isTargeted: $isDropTargeted, perform: handleDrop)
     }
 
     private var content: some View {
@@ -273,7 +314,7 @@ struct QuickInputView: View {
                 historySidebar
                     .frame(width: 180)
 
-                Divider().opacity(0.4)
+                KupifaTheme.line.frame(width: 1)
             }
 
             inputColumn
@@ -282,7 +323,7 @@ struct QuickInputView: View {
 
             // 結果は入力欄の右横に、モデルごとの縦カラムで並べる
             if !runs.isEmpty {
-                Divider().opacity(0.4)
+                KupifaTheme.line.frame(width: 1)
 
                 HStack(alignment: .top, spacing: 10) {
                     ForEach(Array(runs.enumerated()), id: \.element.id) { index, run in
@@ -294,11 +335,31 @@ struct QuickInputView: View {
             }
         }
         .padding(14)
+        .onDrop(of: [.fileURL], isTargeted: $isDropTargeted, perform: handleDrop)
+        .onChange(of: inputText) { _, newValue in
+            adoptDroppedFilePathIfNeeded(newValue)
+        }
     }
 
     private var inputColumn: some View {
         VStack(alignment: .leading, spacing: 10) {
+            if mode == .speak {
+                speakStylePicker
+            } else if mode == .translate {
+                translateDirectionHint
+            }
+
             inputEditor
+
+            if let dropMessage {
+                Text(dropMessage)
+                    .font(.caption)
+                    .foregroundStyle(dropMessage.contains("読み込み") ? KupifaTheme.muted : Color.orange)
+            } else {
+                Text("テキストの貼り付け、または HTML / Markdown ファイルのドロップ")
+                    .font(.caption2)
+                    .foregroundStyle(KupifaTheme.muted)
+            }
 
             HStack {
                 Button {
@@ -306,13 +367,20 @@ struct QuickInputView: View {
                 } label: {
                     if isLoading {
                         HStack(spacing: 6) {
-                            ProgressView().controlSize(.small)
-                            Text("生成中…")
+                            ProgressView().controlSize(.small).tint(KupifaTheme.inkOnLime)
+                            Text(mode == .speak ? "読み上げ中…" : "生成中…")
                         }
                     } else {
-                        Label("実行", systemImage: "paperplane.fill")
+                        Text(mode == .speak ? "読み上げ ⌘⏎" : "実行 ⌘⏎")
                     }
                 }
+                .buttonStyle(.plain)
+                .font(.caption.weight(.semibold))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .foregroundStyle(KupifaTheme.inkOnLime)
+                .background(Capsule().fill(KupifaTheme.lime))
+                .opacity(inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.45 : 1)
                 .keyboardShortcut(.return, modifiers: .command)
                 .disabled(inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 .help(isLoading ? "再実行すると進行中の生成をキャンセルします" : "⌘⏎ で実行")
@@ -320,25 +388,53 @@ struct QuickInputView: View {
                 Button {
                     clearAll()
                 } label: {
-                    Label("新規", systemImage: "plus")
+                    Text("新規")
+                        .font(.caption)
+                        .foregroundStyle(KupifaTheme.muted)
                 }
+                .buttonStyle(.plain)
                 .help("入力と結果をクリアして新規作成（⌘K）")
                 .disabled(inputText.isEmpty && runs.isEmpty && !editorHasText)
 
                 Spacer()
-
-                if preferSpeed {
-                    Text("速さ優先")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
             }
 
-            Text("⌘⏎ 実行 ・ ⌘K 新規 ・ ⌘F 速さ ・ ⌘M 全モデル ・ ⌘L 言語 ・ Esc 閉じる")
+            Text("⌘⏎ 実行 ・ ⌘K 新規 ・ ⌘F 速さ ・ ⌘L 言語 ・ Esc 閉じる")
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(KupifaTheme.muted)
                 .fixedSize(horizontal: false, vertical: true)
-                .help("⌘1 整える ・ ⌘2 返事作成 ・ ⌘3 翻訳")
+                .help("⌘1 整える ・ ⌘2 返事作成 ・ ⌘3 翻訳 ・ ⌘4 音声")
+        }
+    }
+
+    private var speakStylePicker: some View {
+        HStack(spacing: 6) {
+            ForEach(SpeakStyle.allCases) { style in
+                Button {
+                    speakStyleRaw = style.rawValue
+                } label: {
+                    Text(style.title)
+                        .font(.caption)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 4)
+                        .foregroundStyle(speakStyle == style ? KupifaTheme.lime : KupifaTheme.muted)
+                        .background { pillBackground(selected: speakStyle == style) }
+                }
+                .buttonStyle(.plain)
+                .help(style.title)
+            }
+
+            Spacer()
+
+            Picker("声", selection: $grokVoiceRaw) {
+                ForEach(GrokVoice.allCases) { voice in
+                    Text(voice.displayName).tag(voice.rawValue)
+                }
+            }
+            .pickerStyle(.menu)
+            .fixedSize()
+            .tint(KupifaTheme.muted)
+            .help("Grok の読み上げ音声")
         }
     }
 
@@ -348,8 +444,8 @@ struct QuickInputView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("履歴")
-                    .font(.caption.bold())
-                    .foregroundStyle(.secondary)
+                    .font(.caption)
+                    .foregroundStyle(KupifaTheme.muted)
                 Spacer()
                 if !history.isEmpty {
                     Button {
@@ -360,7 +456,7 @@ struct QuickInputView: View {
                     }
                     .buttonStyle(.plain)
                     .controlSize(.small)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(KupifaTheme.muted)
                     .help("履歴をすべて削除")
                 }
             }
@@ -368,7 +464,7 @@ struct QuickInputView: View {
             if history.isEmpty {
                 Text("まだありません")
                     .font(.caption)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(KupifaTheme.muted)
                 Spacer()
             } else {
                 ScrollView {
@@ -387,13 +483,10 @@ struct QuickInputView: View {
             restore(entry)
         } label: {
             HStack(alignment: .top, spacing: 6) {
-                Image(systemName: entry.actionMode.icon)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 2)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(entry.input)
                         .font(.caption)
+                        .foregroundStyle(KupifaTheme.ink)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
                     HStack(spacing: 4) {
@@ -404,13 +497,22 @@ struct QuickInputView: View {
                         }
                     }
                     .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(KupifaTheme.muted)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(6)
-            .contentShape(RoundedRectangle(cornerRadius: 8))
-            .background(innerSurface(cornerRadius: 8))
+            .padding(8)
+            .contentShape(RoundedRectangle(cornerRadius: 10))
+            .background {
+                if entry.id == currentHistoryID {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(KupifaTheme.surface)
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .strokeBorder(KupifaTheme.line, lineWidth: 1)
+                        }
+                }
+            }
         }
         .buttonStyle(.plain)
         .help("クリックで入力欄に復元")
@@ -451,14 +553,12 @@ struct QuickInputView: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text(run.provider.displayName)
-                    .font(.caption.bold())
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(Capsule().fill(Color.accentColor.opacity(0.2)))
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(KupifaTheme.lime)
 
                 switch run.currentState {
                 case .loading, .streaming:
-                    ProgressView().controlSize(.small)
+                    ProgressView().controlSize(.small).tint(KupifaTheme.lime)
                 case .failure:
                     Label("エラー", systemImage: "exclamationmark.triangle.fill")
                         .font(.caption)
@@ -470,7 +570,7 @@ struct QuickInputView: View {
                 if let status = run.currentState.loadingStatus {
                     Text(status)
                         .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(KupifaTheme.muted)
                 }
 
                 Spacer()
@@ -482,12 +582,18 @@ struct QuickInputView: View {
                     Button {
                         copy(run: run)
                     } label: {
-                        Label(copied ? "コピーしました" : "コピー", systemImage: copied ? "checkmark" : "doc.on.doc")
+                        Text(copied ? "コピーしました" : "コピー")
+                            .font(.caption)
+                            .foregroundStyle(copied ? KupifaTheme.lime : KupifaTheme.muted)
                     }
-                    .controlSize(.small)
+                    .buttonStyle(.plain)
                     .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: [.command, .shift])
                     .help("⌘⇧\(index + 1) でコピー（生成中も可）")
                 }
+            }
+
+            if lastMode == .speak, run.provider == .grok {
+                speakPlaybackBar
             }
 
             // 本文はカード内スクロールにして、パネル全体を下にスクロールさせない
@@ -497,99 +603,166 @@ struct QuickInputView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(status)
                             .font(.callout)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(KupifaTheme.muted)
                         if status.contains("考え"), run.provider == .grok {
                             Text("回答前の推論中です。この段階が長くなることがあります")
                                 .font(.caption2)
-                                .foregroundStyle(.tertiary)
+                                .foregroundStyle(KupifaTheme.muted)
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 case .failure(let message):
                     Text(message)
                         .font(.callout)
-                        .foregroundStyle(.red)
+                        .foregroundStyle(KupifaTheme.danger)
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 case .streaming(let text):
                     Text(text.isEmpty ? "生成中…" : text)
                         .font(.system(size: 14))
-                        .foregroundStyle(text.isEmpty ? .secondary : .primary)
+                        .foregroundStyle(text.isEmpty ? KupifaTheme.muted : KupifaTheme.ink)
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 case .success(let text):
                     Text(text)
                         .font(.system(size: 14))
+                        .foregroundStyle(KupifaTheme.ink)
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
         }
-        .padding(10)
+        .padding(14)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(innerSurface())
+        .background {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(KupifaTheme.lime.opacity(0.28), lineWidth: 1)
+        }
     }
 
     /// 日 ⇄ EN のスイッチ。切り替えると未生成側はLLMで翻訳される
     private func languageSwitch(for run: ModelRun) -> some View {
         HStack(spacing: 4) {
-            Text("日")
-                .font(.caption2)
-                .foregroundStyle(run.displayLanguage == .japanese ? .primary : .tertiary)
-            Toggle("", isOn: Binding(
-                get: { run.displayLanguage == .english },
-                set: { setDisplayLanguage($0 ? .english : .japanese, for: run.provider) }
-            ))
-            .toggleStyle(.switch)
-            .controlSize(.mini)
-            .labelsHidden()
-            Text("EN")
-                .font(.caption2)
-                .foregroundStyle(run.displayLanguage == .english ? .primary : .tertiary)
+            ForEach(OutputLanguage.allCases) { language in
+                Button {
+                    setDisplayLanguage(language, for: run.provider)
+                } label: {
+                    Text(language == .japanese ? "日" : "EN")
+                        .font(.caption2)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .foregroundStyle(run.displayLanguage == language ? KupifaTheme.lime : KupifaTheme.muted)
+                        .background { pillBackground(selected: run.displayLanguage == language) }
+                }
+                .buttonStyle(.plain)
+            }
         }
         .help("表示言語の切り替え（未生成の言語はAIが翻訳します）")
     }
 
+    private var speakPlaybackBar: some View {
+        HStack(spacing: 8) {
+            Button {
+                speechPlayer.toggle()
+            } label: {
+                Image(systemName: speechPlayer.isPlaying ? "pause.fill" : "play.fill")
+                    .foregroundStyle(speechPlayer.hasAudio ? KupifaTheme.lime : KupifaTheme.muted)
+            }
+            .disabled(!speechPlayer.hasAudio)
+            .help(speechPlayer.isPlaying ? "一時停止" : "再生")
+
+            Button {
+                speechPlayer.stop()
+                speechPlayer.play()
+            } label: {
+                Image(systemName: "backward.end.fill")
+                    .foregroundStyle(speechPlayer.hasAudio ? KupifaTheme.ink : KupifaTheme.muted)
+            }
+            .disabled(!speechPlayer.hasAudio)
+            .help("最初から再生")
+
+            if isSynthesizingSpeech {
+                ProgressView().controlSize(.mini).tint(KupifaTheme.lime)
+                Text("音声を生成中…")
+                    .font(.caption2)
+                    .foregroundStyle(KupifaTheme.muted)
+            } else if let speechError {
+                Text(speechError)
+                    .font(.caption2)
+                    .foregroundStyle(KupifaTheme.danger)
+                    .lineLimit(2)
+            } else if speechPlayer.hasAudio {
+                Text("\(formatTime(speechPlayer.currentTime)) / \(formatTime(speechPlayer.duration))")
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(KupifaTheme.muted)
+            }
+
+            Spacer()
+        }
+        .buttonStyle(.plain)
+    }
+
     // MARK: - ロジック
+
+    private var speakStyle: SpeakStyle {
+        SpeakStyle(rawValue: speakStyleRaw) ?? .plain
+    }
+
+    private var grokVoice: GrokVoice {
+        GrokVoice(rawValue: grokVoiceRaw) ?? .eve
+    }
 
     private var placeholder: String {
         switch mode {
         case .polish: "整えたい文章を入力…（例: メールの下書き）"
         case .reply: "返したい荒い内容 + 相手の原文を貼り付け…（例: ビジネスメールっぽく、などの指定も可）"
-        case .translate: "翻訳したい文章を入力…"
+        case .translate: "翻訳したい文章を入力…（日本語↔英語は自動判定）"
+        case .speak: "読み上げたい文章を入力、または HTML / Markdown をドロップ…"
         case .search: "調べたいことを入力…（Grokが Web検索します）"
         }
     }
 
-    /// 翻訳モードでは日英同時生成を使わない
+    /// 翻訳・音声モードでは日英同時生成を使わない
     private var shouldGenerateBothLanguages: Bool {
-        generateBothLanguages && mode != .translate
+        generateBothLanguages && mode != .translate && mode != .speak
     }
 
-    private var availableProviders: [AIProvider] {
-        mode == .search ? AIProvider.allCases.filter(\.supportsSearch) : AIProvider.allCases
+    /// 翻訳は入力言語の反対側。それ以外は設定の出力言語。
+    private func resolvedOutputLanguage(for mode: ActionMode, input: String) -> OutputLanguage {
+        mode == .translate ? LanguageDetector.translationTarget(for: input) : outputLanguage
     }
 
-    /// この実行で対象になるプロバイダ一覧
-    private var targetProviders: [AIProvider] {
-        if mode == .search { return [.grok] }
-        guard runAllModels else { return [provider] }
-        // 全モデル実行時はAPIキー登録済みのものだけを対象にする
-        let configured = AIProvider.allCases.filter { KeychainStore.apiKey(for: $0) != nil }
-        return configured.isEmpty ? [provider] : configured
+    private var translateDirectionHint: some View {
+        let trimmed = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return HStack(spacing: 6) {
+            if trimmed.isEmpty {
+                Text("日本語と英語を自動判定")
+                    .foregroundStyle(KupifaTheme.muted)
+            } else {
+                let source = LanguageDetector.detectSource(trimmed)
+                Text(source.label)
+                    .foregroundStyle(KupifaTheme.ink)
+                Image(systemName: "arrow.right")
+                    .foregroundStyle(KupifaTheme.muted)
+                Text(source.other.label)
+                    .foregroundStyle(KupifaTheme.lime)
+                Text("自動判定")
+                    .foregroundStyle(KupifaTheme.muted)
+            }
+            Spacer()
+        }
+        .font(.caption)
+        .help("入力が日本語なら英語へ、英語なら日本語へ翻訳します")
     }
 
     private func switchMode(to newMode: ActionMode) {
-        mode = newMode
-        if newMode == .search && !provider.supportsSearch {
-            provider = .grok
+        if mode == .speak && newMode != .speak {
+            speechPlayer.reset()
+            speechError = nil
+            isSynthesizingSpeech = false
         }
+        mode = newMode
         inputFocused = true
-    }
-
-    private func toggleRunAllModels() {
-        guard mode != .search else { return }
-        runAllModels.toggle()
     }
 
     private func toggleOutputLanguage() {
@@ -599,15 +772,6 @@ struct QuickInputView: View {
         for run in runs {
             setDisplayLanguage(newLanguage, for: run.provider)
         }
-    }
-
-    private func cycleProvider() {
-        let providers = availableProviders
-        guard let current = providers.firstIndex(of: provider) else {
-            provider = providers.first ?? .grok
-            return
-        }
-        provider = providers[(current + 1) % providers.count]
     }
 
     private func clearAll() {
@@ -636,9 +800,18 @@ struct QuickInputView: View {
     private func cancelRunningTasks() {
         runningTasks.forEach { $0.cancel() }
         runningTasks = []
+        speechGeneration = UUID()
+        speechPlayer.reset()
+        speechError = nil
+        isSynthesizingSpeech = false
     }
 
     private func run() {
+        if mode == .speak {
+            runSpeak()
+            return
+        }
+
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
 
@@ -653,26 +826,21 @@ struct QuickInputView: View {
         let currentMode = mode
         lastInput = text
         lastMode = currentMode
-        let languages: [OutputLanguage] = shouldGenerateBothLanguages ? OutputLanguage.allCases : [outputLanguage]
+        let targetLanguage = resolvedOutputLanguage(for: currentMode, input: text)
+        let languages: [OutputLanguage] = shouldGenerateBothLanguages ? OutputLanguage.allCases : [targetLanguage]
 
-        // キーを先読みして並列リクエスト時のKeychainアクセスを減らす
-        for p in targetProviders {
-            _ = KeychainStore.apiKey(for: p)
-        }
+        _ = KeychainStore.apiKey(for: .grok)
 
-        runs = targetProviders.map { p in
+        runs = [
             ModelRun(
-                provider: p,
-                displayLanguage: outputLanguage,
+                provider: .grok,
+                displayLanguage: targetLanguage,
                 states: Dictionary(uniqueKeysWithValues: languages.map { ($0, .loading(status: "接続中…")) })
             )
-        }
+        ]
 
-        // プロバイダ × 言語 の全組み合わせを並列ストリーミング
-        runningTasks = targetProviders.flatMap { p in
-            languages.map { language in
-                startStreamTask(provider: p, language: language, mode: currentMode, input: text)
-            }
+        runningTasks = languages.map { language in
+            startStreamTask(provider: .grok, language: language, mode: currentMode, input: text)
         }
     }
 
@@ -684,11 +852,15 @@ struct QuickInputView: View {
         input: String
     ) -> Task<Void, Never> {
         Task {
-            let prompt = PromptBuilder.build(mode: mode, input: input, outputLanguage: language)
+            let prompt = PromptBuilder.build(
+                mode: mode,
+                input: input,
+                outputLanguage: language,
+                speakStyle: speakStyle
+            )
             do {
                 let result = try await AIService.stream(
                     prompt: prompt,
-                    provider: provider,
                     mode: mode
                 ) { event in
                     Task { @MainActor in
@@ -700,6 +872,9 @@ struct QuickInputView: View {
                     runs[index].states[language] = .success(result)
                 }
                 recordResult(result, provider: provider, language: language)
+                if lastMode == .speak {
+                    await playSpeech(for: result, language: language)
+                }
             } catch is CancellationError {
                 return
             } catch {
@@ -781,9 +956,177 @@ struct QuickInputView: View {
         }
     }
 
-    private static func defaultProvider() -> AIProvider {
-        UserDefaults.standard.string(forKey: SettingsKeys.defaultProvider)
-            .flatMap(AIProvider.init(rawValue:)) ?? .claude
+    private func runSpeak() {
+        let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+
+        cancelRunningTasks()
+        copiedProviderID = nil
+
+        history = HistoryStore.appending(HistoryEntry(mode: .speak, input: text), to: history)
+        HistoryStore.saveAsync(history)
+        currentHistoryID = history.first?.id
+
+        lastInput = text
+        lastMode = .speak
+        _ = KeychainStore.apiKey(for: .grok)
+
+        let language = outputLanguage
+        let status = speakStyle == .plain ? "音声を生成中…" : "原稿を作成中…"
+        runs = [
+            ModelRun(
+                provider: .grok,
+                displayLanguage: language,
+                states: [language: .loading(status: status)]
+            )
+        ]
+
+        if speakStyle == .plain {
+            if let index = runs.firstIndex(where: { $0.provider == .grok }) {
+                runs[index].states[language] = .success(text)
+            }
+            recordResult(text, provider: .grok, language: language)
+            runningTasks = [Task { await playSpeech(for: text, language: language) }]
+        } else {
+            runningTasks = [startStreamTask(provider: .grok, language: language, mode: .speak, input: text)]
+        }
+    }
+
+    private func playSpeech(for text: String, language: OutputLanguage) async {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        let generation = UUID()
+        speechGeneration = generation
+        speechError = nil
+        isSynthesizingSpeech = true
+        speechPlayer.reset()
+        do {
+            _ = try await AIService.synthesizeSpeech(
+                text: trimmed,
+                language: language,
+                voice: grokVoice
+            ) { data, _, _ in
+                Task { @MainActor in
+                    guard speechGeneration == generation else { return }
+                    do {
+                        try speechPlayer.enqueue(data)
+                        if !speechPlayer.isPlaying {
+                            speechPlayer.play()
+                        }
+                    } catch {
+                        speechError = error.localizedDescription
+                    }
+                }
+            }
+        } catch is CancellationError {
+            if speechGeneration == generation {
+                isSynthesizingSpeech = false
+            }
+            return
+        } catch {
+            guard speechGeneration == generation else { return }
+            speechError = error.localizedDescription
+        }
+        if speechGeneration == generation {
+            isSynthesizingSpeech = false
+        }
+    }
+
+    /// TextEditor がファイルパスだけを挿入した場合は、中身を読み直す
+    private func adoptDroppedFilePathIfNeeded(_ raw: String) {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.contains("\n"), trimmed.count < 1024 else { return }
+
+        let url: URL?
+        if trimmed.hasPrefix("file:"), let parsed = URL(string: trimmed) {
+            url = parsed
+        } else if trimmed.hasPrefix("/") {
+            url = URL(fileURLWithPath: trimmed)
+        } else {
+            return
+        }
+
+        guard let url,
+              DroppedTextLoader.isSupported(url: url),
+              FileManager.default.fileExists(atPath: url.path),
+              let text = try? DroppedTextLoader.load(from: url)
+        else { return }
+
+        inputText = text
+        editorHasText = true
+        dropMessage = "ファイルを読み込みました"
+        let captured = dropMessage
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2))
+            if dropMessage == captured {
+                dropMessage = nil
+            }
+        }
+    }
+
+    private func handleDrop(providers: [NSItemProvider]) -> Bool {
+        let hasFile = providers.contains { $0.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) }
+        guard hasFile else { return false }
+
+        Task { @MainActor in
+            var texts: [String] = []
+            var lastError: Error?
+            for provider in providers {
+                do {
+                    guard let url = try await loadDroppedFileURL(from: provider) else { continue }
+                    texts.append(try DroppedTextLoader.load(from: url))
+                } catch {
+                    lastError = error
+                }
+            }
+            if texts.isEmpty {
+                dropMessage = lastError?.localizedDescription ?? DroppedTextError.unreadable.errorDescription
+                return
+            }
+            let joined = texts.joined(separator: "\n\n")
+            if inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                inputText = joined
+            } else {
+                inputText += "\n\n" + joined
+            }
+            editorHasText = true
+            dropMessage = texts.count == 1 ? "ファイルを読み込みました" : "\(texts.count)件のファイルを読み込みました"
+            let captured = dropMessage
+            try? await Task.sleep(for: .seconds(2))
+            if dropMessage == captured {
+                dropMessage = nil
+            }
+        }
+        return true
+    }
+
+    private func loadDroppedFileURL(from provider: NSItemProvider) async throws -> URL? {
+        try await withCheckedThrowingContinuation { continuation in
+            provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, error in
+                if let error {
+                    continuation.resume(throwing: error)
+                    return
+                }
+                if let url = item as? URL {
+                    continuation.resume(returning: url)
+                    return
+                }
+                if let nsurl = item as? NSURL {
+                    continuation.resume(returning: nsurl as URL)
+                    return
+                }
+                if let data = item as? Data {
+                    continuation.resume(returning: URL(dataRepresentation: data, relativeTo: nil))
+                    return
+                }
+                continuation.resume(returning: nil)
+            }
+        }
+    }
+
+    private func formatTime(_ time: TimeInterval) -> String {
+        let total = max(0, Int(time.rounded()))
+        return String(format: "%d:%02d", total / 60, total % 60)
     }
 }
 

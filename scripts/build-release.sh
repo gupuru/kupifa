@@ -1,8 +1,8 @@
 #!/bin/bash
 # kupifa 配布用ビルドスクリプト(ad-hoc署名版)
 #
-# Release構成でユニバーサルバイナリ(Apple Silicon + Intel)をビルドし、
-# ad-hoc署名を付けて dist/kupifa.dmg を生成する。
+# Release構成で Apple Silicon (arm64) 向けをビルドし、
+# ad-hoc署名を付けて dist/kupifa.dmg を生成する。Intel は対象外。
 #
 # 将来 Developer ID + 公証に移行する場合は、SIGN_IDENTITY を
 # "Developer ID Application: ..." に変えて、dmg 作成後に
@@ -23,14 +23,14 @@ echo "==> クリーンアップ"
 rm -rf "$BUILD_DIR" "$DIST_DIR"
 mkdir -p "$DIST_DIR"
 
-echo "==> Releaseビルド(ユニバーサルバイナリ、ad-hoc署名)"
+echo "==> Releaseビルド(arm64、ad-hoc署名)"
 xcodebuild \
   -project kupifa.xcodeproj \
   -scheme "$SCHEME" \
   -configuration Release \
   -derivedDataPath "$DERIVED_DATA" \
   ONLY_ACTIVE_ARCH=NO \
-  ARCHS="arm64 x86_64" \
+  ARCHS=arm64 \
   CODE_SIGN_STYLE=Manual \
   CODE_SIGN_IDENTITY="$SIGN_IDENTITY" \
   CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO \

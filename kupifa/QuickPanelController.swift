@@ -132,28 +132,14 @@ final class QuickPanelController {
         panel.standardWindowButton(.miniaturizeButton)?.isHidden = true
         panel.standardWindowButton(.zoomButton)?.isHidden = true
 
-        let hosting = ClearHostingView(rootView: QuickInputView(onClose: { [weak self] in
+        let hosting = NSHostingView(rootView: QuickInputView(onClose: { [weak self] in
             self?.hide()
         }))
         hosting.appearance = NSAppearance(named: .darkAqua)
+        hosting.wantsLayer = true
+        hosting.layer?.isOpaque = false
+        hosting.layer?.backgroundColor = NSColor.clear.cgColor
         panel.contentView = hosting
         return panel
-    }
-}
-
-/// SwiftUI の角丸の外に黒矩形が残らないよう、ホストビュー自体を透明にする
-private final class ClearHostingView<Content: View>: NSHostingView<Content> {
-    override var isOpaque: Bool { false }
-
-    required init(rootView: Content) {
-        super.init(rootView: rootView)
-        wantsLayer = true
-        layer?.isOpaque = false
-        layer?.backgroundColor = NSColor.clear.cgColor
-    }
-
-    @available(*, unavailable)
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
     }
 }

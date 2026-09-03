@@ -54,7 +54,7 @@
 
 ## 動作環境・ビルド
 
-- macOS 15.0 以降
+- macOS 15.0 以降（Apple Silicon）
 - Xcode 26 以降
 
 ```bash
@@ -62,7 +62,7 @@ open kupifa.xcodeproj
 # Xcodeで kupifa スキームを選んで Run (⌘R)
 ```
 
-配布用の `.dmg` はローカルでも作れます。
+配布用の `.dmg` は Apple Silicon 向けです。ローカルでも作れます。
 
 ```bash
 ./scripts/build-release.sh

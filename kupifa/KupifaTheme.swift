@@ -25,7 +25,26 @@ enum KupifaTheme {
     static let nsLime = NSColor(srgbRed: 216 / 255, green: 255 / 255, blue: 62 / 255, alpha: 1)
     static let nsBg = NSColor(srgbRed: 8 / 255, green: 9 / 255, blue: 12 / 255, alpha: 1)
 
+    /// 設定などアプリ本体のウィンドウだけを対象にする。
+    /// MenuBarExtra / ステータスアイテム用の窓に塗ると、メニューバー上で背景が真っ黒になる。
+    static func shouldApplyWindowChrome(_ window: NSWindow) -> Bool {
+        if QuickPanelController.shared.isPanelWindow(window) { return false }
+        if isMenuBarChromeWindow(window) { return false }
+        return window.styleMask.contains(.titled)
+    }
+
     static func applyWindowChrome(_ window: NSWindow) {
+        guard shouldApplyWindowChrome(window) else { return }
         window.backgroundColor = nsBg
+    }
+
+    private static func isMenuBarChromeWindow(_ window: NSWindow) -> Bool {
+        let name = String(describing: type(of: window))
+        if name.contains("StatusBar") || name.contains("StatusItem") || name.contains("MenuBar") {
+            return true
+        }
+        guard let screen = window.screen ?? NSScreen.main else { return false }
+        let onMenuBar = window.frame.maxY >= screen.frame.maxY - 1
+        return onMenuBar && window.frame.height <= 40
     }
 }

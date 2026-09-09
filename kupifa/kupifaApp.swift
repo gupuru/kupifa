@@ -13,15 +13,9 @@ struct kupifaApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
-        MenuBarExtra {
+        // resizable/frame 付きの SwiftUI Image はホストビューになり、メニューバー背景が黒くなる
+        MenuBarExtra("kupifa", image: "MenuBarIcon") {
             MenuBarCommands()
-        } label: {
-            Image("MenuBarIcon")
-                .renderingMode(.template)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 18, height: 18)
-                .accessibilityLabel("kupifa")
         }
 
         Settings {
@@ -66,6 +60,7 @@ private struct MenuBarCommands: View {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        NSImage(named: "MenuBarIcon")?.isTemplate = true
         HotKeyManager.shared.register(option: .current) {
             QuickPanelController.shared.toggle()
         }
@@ -83,8 +78,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 QuickPanelController.shared.promoteFloatingLevel()
                 return
             }
-            KupifaTheme.applyWindowChrome(window)
-            if window.styleMask.contains(.titled) {
+            if KupifaTheme.shouldApplyWindowChrome(window) {
+                KupifaTheme.applyWindowChrome(window)
                 QuickPanelController.shared.keepVisibleForInternalWindows()
             }
         }

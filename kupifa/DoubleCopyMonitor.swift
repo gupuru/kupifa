@@ -3,6 +3,7 @@
 //  kupifa
 //
 //  他アプリで ⌘C を短時間に2回押したら、クリップボードの内容でパネルを開く。
+//  パネルが既に開いていれば、入力欄の末尾へ追加する。
 //
 
 import AppKit
@@ -77,7 +78,7 @@ final class DoubleCopyMonitor {
             let text = NSPasteboard.general.string(forType: .string)
             let trimmed = text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             guard !trimmed.isEmpty else { return }
-            QuickPanelController.shared.show(prefill: text)
+            QuickPanelController.shared.show(prefill: text, append: true)
         }
         openWorkItem = work
         DispatchQueue.main.asyncAfter(deadline: .now() + pasteboardSettle, execute: work)

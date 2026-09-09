@@ -127,7 +127,8 @@ struct QuickInputView: View {
             guard let text = note.object as? String,
                   !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             else { return }
-            applyPrefill(text)
+            let append = (note.userInfo?[PrefillUserInfoKey.append] as? Bool) ?? false
+            applyPrefill(text, append: append)
         }
         .background { hiddenShortcuts }
     }
@@ -785,8 +786,21 @@ struct QuickInputView: View {
         inputFocused = true
     }
 
-    /// 他アプリの選択テキストを入力欄へセット（ホットキー起動時）
-    private func applyPrefill(_ text: String) {
+    /// 他アプリの選択テキストを入力欄へセット（ホットキー起動時 / ⌘C 二連続）
+    private func applyPrefill(_ text: String, append: Bool = false) {
+        if append, !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            if inputText.hasSuffix("\n\n") {
+                inputText += text
+            } else if inputText.hasSuffix("\n") {
+                inputText += "\n" + text
+            } else {
+                inputText += "\n\n" + text
+            }
+            editorHasText = true
+            inputFocused = true
+            return
+        }
+
         cancelRunningTasks()
         inputText = text
         editorHasText = true

@@ -89,7 +89,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                   !QuickPanelController.shared.isPanelWindow(window)
             else { return }
             DispatchQueue.main.async {
-                QuickPanelController.shared.restoreHidesOnDeactivateIfNeeded()
+                QuickPanelController.shared.restoreFloatingLevelIfNeeded()
             }
         }
     }

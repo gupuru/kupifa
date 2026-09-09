@@ -190,6 +190,11 @@ private struct PasteboardSnapshot {
     }
 }
 
+enum PrefillUserInfoKey {
+    /// 既存の入力欄テキストの末尾へ追加する
+    static let append = "append"
+}
+
 extension Notification.Name {
     /// object に String（選択テキスト）を載せる
     static let kupifaPrefillInput = Notification.Name("kupifaPrefillInput")

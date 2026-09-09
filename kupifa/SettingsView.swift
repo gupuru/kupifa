@@ -296,7 +296,7 @@ private struct GeneralSettingsTab: View {
                             DoubleCopyMonitor.shared.stop()
                         }
                     }
-                Text("他アプリで ⌘C をすばやく2回押すと、コピーしたテキストを入力欄に入れてパネルを開きます。ホットキー起動時も選択中のテキストを取り込みます。")
+                Text("他アプリで ⌘C をすばやく2回押すと、コピーしたテキストを入力欄に入れてパネルを開きます。パネルが開いているときは末尾に追加します。ホットキー起動時も選択中のテキストを取り込みます。")
                     .font(.caption)
                     .foregroundStyle(KupifaTheme.muted)
             }

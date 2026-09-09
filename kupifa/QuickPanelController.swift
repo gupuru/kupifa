@@ -40,9 +40,11 @@ final class QuickPanelController {
         }
     }
 
-    func show(prefill: String? = nil) {
+    /// - Parameter append: true のとき、パネルが既に開いていれば入力欄の末尾へ追加する。
+    func show(prefill: String? = nil, append: Bool = false) {
         let panel = self.panel ?? makePanel()
         self.panel = panel
+        let wasVisible = panel.isVisible
         AIService.warmConnections()
 
         if let screen = NSScreen.main {
@@ -62,8 +64,13 @@ final class QuickPanelController {
 
         if let prefill, !prefill.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             // パネル表示後に配信（HostingView の購読が生きている状態で届ける）
+            let shouldAppend = append && wasVisible
             DispatchQueue.main.async {
-                NotificationCenter.default.post(name: .kupifaPrefillInput, object: prefill)
+                NotificationCenter.default.post(
+                    name: .kupifaPrefillInput,
+                    object: prefill,
+                    userInfo: [PrefillUserInfoKey.append: shouldAppend]
+                )
             }
         }
     }
@@ -79,20 +86,19 @@ final class QuickPanelController {
         openSettings()
     }
 
-    /// 設定などアプリ内ウィンドウを開くあいだは、他アプリ切替でパネルが消えないようにする。
+    /// 設定などアプリ内ウィンドウのあいだは、パネルを通常レベルにして重なりを整える。
     func keepVisibleForInternalWindows() {
-        panel?.hidesOnDeactivate = false
         panel?.level = .normal
     }
 
-    func restoreHidesOnDeactivateIfNeeded() {
+    /// 設定ウィンドウが無くなったら、パネルを再び前面に浮かせる。
+    func restoreFloatingLevelIfNeeded() {
         let otherTitled = NSApp.windows.contains { window in
             window.isVisible
                 && !isPanelWindow(window)
                 && window.styleMask.contains(.titled)
         }
         if !otherTitled {
-            panel?.hidesOnDeactivate = true
             panel?.level = .floating
         }
     }
@@ -122,7 +128,8 @@ final class QuickPanelController {
         panel.level = .floating
         panel.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
         panel.isReleasedWhenClosed = false
-        panel.hidesOnDeactivate = true
+        // 他アプリへフォーカスが移っても閉じない。閉じるのはボタン / Esc / ホットキーのみ。
+        panel.hidesOnDeactivate = false
         // ウィンドウ自体は透明にし、SwiftUI側で描く角丸の不透明パネルを浮かせる
         panel.backgroundColor = .clear
         panel.isOpaque = false

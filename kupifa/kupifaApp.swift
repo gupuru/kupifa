@@ -33,6 +33,7 @@ struct kupifaApp: App {
 
 private struct MenuBarCommands: View {
     @Environment(\.openSettings) private var openSettings
+    @StateObject private var updateChecker = KupifaUpdateChecker.shared
 
     var body: some View {
         Button("クイック入力を開く") {
@@ -46,6 +47,13 @@ private struct MenuBarCommands: View {
             QuickPanelController.shared.presentSettings { openSettings() }
         }
         .keyboardShortcut(",")
+
+        if updateChecker.updateAvailable, let remoteVersion = updateChecker.remoteVersion {
+            Divider()
+            Button("アップデート（v\(remoteVersion)）を入手") {
+                updateChecker.openDownloadPage()
+            }
+        }
 
         Divider()
 
@@ -63,6 +71,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         DoubleCopyMonitor.shared.start()
         AIService.warmConnections()
+        KupifaUpdateChecker.shared.startChecking()
 
         NotificationCenter.default.addObserver(
             forName: NSWindow.didBecomeKeyNotification,

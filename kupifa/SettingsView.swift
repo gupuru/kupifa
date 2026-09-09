@@ -84,7 +84,6 @@ struct SettingsView: View {
         .frame(minWidth: 520, minHeight: 520)
         .foregroundStyle(KupifaTheme.ink)
         .background(KupifaTheme.bg)
-        .preferredColorScheme(.dark)
         .tint(KupifaTheme.lime)
         .onAppear {
             NSApp.windows
@@ -241,9 +240,29 @@ private struct GeneralSettingsTab: View {
     @AppStorage(SettingsKeys.preferSpeed) private var preferSpeed = true
     @AppStorage(SettingsKeys.openOnDoubleCopy) private var openOnDoubleCopy = true
     @State private var accessibilityTrusted = SelectionCapture.isTrusted
+    @StateObject private var updateChecker = KupifaUpdateChecker.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
+            if updateChecker.updateAvailable, let remoteVersion = updateChecker.remoteVersion {
+                SettingsCard(title: "アップデート") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("現在 v\(updateChecker.localVersion) / 最新 v\(remoteVersion)")
+                            .font(.caption)
+                            .foregroundStyle(KupifaTheme.muted)
+                        Button("ダウンロード（v\(remoteVersion)）") {
+                            updateChecker.openDownloadPage()
+                        }
+                        .buttonStyle(.plain)
+                        .font(.caption.weight(.semibold))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .foregroundStyle(KupifaTheme.inkOnLime)
+                        .background(Capsule().fill(KupifaTheme.lime))
+                    }
+                }
+            }
+
             SettingsCard(title: "呼び出しホットキー") {
                 Picker("ショートカット", selection: $hotKeyRaw) {
                     ForEach(HotKeyOption.allCases) { option in

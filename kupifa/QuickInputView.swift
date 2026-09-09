@@ -115,7 +115,6 @@ struct QuickInputView: View {
         }
         .frame(minWidth: panelMinWidth, minHeight: 440)
         .foregroundStyle(KupifaTheme.ink)
-        .preferredColorScheme(.dark)
         .background(panelBackground)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .onAppear { inputFocused = true }

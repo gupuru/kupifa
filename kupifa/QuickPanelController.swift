@@ -134,7 +134,6 @@ final class QuickPanelController {
         panel.backgroundColor = .clear
         panel.isOpaque = false
         panel.hasShadow = true
-        panel.appearance = NSAppearance(named: .darkAqua)
         panel.standardWindowButton(.closeButton)?.isHidden = true
         panel.standardWindowButton(.miniaturizeButton)?.isHidden = true
         panel.standardWindowButton(.zoomButton)?.isHidden = true
@@ -142,7 +141,6 @@ final class QuickPanelController {
         let hosting = NSHostingView(rootView: QuickInputView(onClose: { [weak self] in
             self?.hide()
         }))
-        hosting.appearance = NSAppearance(named: .darkAqua)
         hosting.wantsLayer = true
         hosting.layer?.isOpaque = false
         hosting.layer?.backgroundColor = NSColor.clear.cgColor

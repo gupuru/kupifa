@@ -48,6 +48,26 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages project create kupifa --production-branch=main
 
+      - name: Generate docs/version.json
+        run: |
+          python3 - <<'PY'
+          import json
+          import re
+          from pathlib import Path
+
+          pbxproj = Path('kupifa.xcodeproj/project.pbxproj')
+          text = pbxproj.read_text(encoding='utf-8')
+          m = re.search(r'MARKETING_VERSION\s*=\s*([^;]+);', text)
+          version = m.group(1).strip() if m else '0.0'
+
+          out = {
+              "version": version,
+              "downloadUrl": "https://kupifa.pages.dev/download",
+          }
+          Path('docs/version.json').write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding='utf-8')
+          print("docs/version.json:", out)
+          PY
+
       - name: Deploy docs to Pages
         uses: cloudflare/wrangler-action@v4
         with:

@@ -26,7 +26,6 @@ enum KupifaTheme {
     static let nsBg = NSColor(srgbRed: 8 / 255, green: 9 / 255, blue: 12 / 255, alpha: 1)
 
     static func applyWindowChrome(_ window: NSWindow) {
-        window.appearance = NSAppearance(named: .darkAqua)
         window.backgroundColor = nsBg
     }
 }

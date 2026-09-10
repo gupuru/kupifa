@@ -87,7 +87,7 @@ struct SettingsView: View {
         .tint(KupifaTheme.lime)
         .onAppear {
             NSApp.windows
-                .filter { !QuickPanelController.shared.isPanelWindow($0) && $0.isVisible }
+                .filter { $0.isVisible && KupifaTheme.shouldApplyWindowChrome($0) }
                 .forEach(KupifaTheme.applyWindowChrome)
         }
     }

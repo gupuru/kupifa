@@ -2,14 +2,22 @@
 //  KupifaUpdateChecker.swift
 //  kupifa
 //
-//  配布（Cloudflare Pages + DMG）向けの軽量アップデート通知。
-//  app 起動時に version.json を取得して、ローカル版より新しい場合だけ UI に出します。
+//  配布（GitHub Pages の version.json + GitHub Releases の DMG）向けの軽量アップデート通知。
+//  起動時と設定の手動確認で version.json を取り、ローカル版より新しい場合だけ通知します。
 //
 
 import AppKit
 import Foundation
 import Combine
 import SwiftUI
+
+enum UpdateCheckStatus: Equatable {
+    case idle
+    case checking
+    case upToDate
+    case updateAvailable
+    case failed
+}
 
 private struct RemoteVersionInfo: Decodable {
     let version: String
@@ -20,17 +28,22 @@ private struct RemoteVersionInfo: Decodable {
 final class KupifaUpdateChecker: ObservableObject {
     static let shared = KupifaUpdateChecker()
 
+    @Published private(set) var status: UpdateCheckStatus = .idle
     @Published private(set) var updateAvailable: Bool = false
     @Published private(set) var localVersion: String
     @Published private(set) var remoteVersion: String?
 
-    private let remoteInfoURL = URL(string: "https://kupifa.pages.dev/version.json")!
+    private let remoteInfoURL = URL(string: "https://gupuru.github.io/kupifa/version.json")!
 
     private init() {
         self.localVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
     }
 
     func startChecking() {
+        checkNow()
+    }
+
+    func checkNow() {
         Task { await checkForUpdates() }
     }
 
@@ -40,25 +53,41 @@ final class KupifaUpdateChecker: ObservableObject {
     }
 
     private var remoteDownloadUrl: String?
+    private var checkGeneration = 0
 
     private func checkForUpdates() async {
+        checkGeneration += 1
+        let generation = checkGeneration
+        status = .checking
+
         do {
             let info = try await fetchRemoteVersionInfo()
+            guard generation == checkGeneration else { return }
             let isNewer = VersionSemver.isRemoteNewer(remote: info.version, local: localVersion)
-            updateAvailable = isNewer
-            remoteVersion = isNewer ? info.version : nil
+            remoteVersion = info.version
             remoteDownloadUrl = info.downloadUrl
+            updateAvailable = isNewer
+            status = isNewer ? .updateAvailable : .upToDate
         } catch {
-            // アップデート確認は補助機能なので、失敗時は黙って無効化します。
-            updateAvailable = false
-            remoteVersion = nil
-            remoteDownloadUrl = nil
+            guard generation == checkGeneration else { return }
+            // 再確認の失敗で、すでに出している更新通知は消さない。
+            if !updateAvailable {
+                remoteVersion = nil
+                remoteDownloadUrl = nil
+            }
+            status = .failed
         }
     }
 
     private func fetchRemoteVersionInfo() async throws -> RemoteVersionInfo {
-        var request = URLRequest(url: remoteInfoURL)
-        request.timeoutInterval = 2.5
+        var components = URLComponents(url: remoteInfoURL, resolvingAgainstBaseURL: false)
+        var items = components?.queryItems ?? []
+        items.append(URLQueryItem(name: "t", value: String(Int(Date().timeIntervalSince1970))))
+        components?.queryItems = items
+        let url = components?.url ?? remoteInfoURL
+
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 8
         request.cachePolicy = .reloadIgnoringLocalCacheData
 
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -70,7 +99,7 @@ final class KupifaUpdateChecker: ObservableObject {
     }
 }
 
-private enum VersionSemver {
+enum VersionSemver {
     // "1.0", "1.0.0" などを想定した簡易比較（数値部分のみ）。
     static func isRemoteNewer(remote: String, local: String) -> Bool {
         let remoteParts = parse(remote)

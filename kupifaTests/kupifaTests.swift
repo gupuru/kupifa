@@ -128,6 +128,25 @@ struct LanguageDetectorTests {
     }
 }
 
+struct VersionSemverTests {
+    @Test func equalVersionsAreNotNewer() {
+        #expect(!VersionSemver.isRemoteNewer(remote: "1.0", local: "1.0"))
+        #expect(!VersionSemver.isRemoteNewer(remote: "1.0.0", local: "1.0"))
+        #expect(!VersionSemver.isRemoteNewer(remote: "1.0", local: "1.0.0"))
+    }
+
+    @Test func remotePatchOrMinorIsNewer() {
+        #expect(VersionSemver.isRemoteNewer(remote: "1.0.1", local: "1.0"))
+        #expect(VersionSemver.isRemoteNewer(remote: "1.1", local: "1.0"))
+        #expect(VersionSemver.isRemoteNewer(remote: "2.0", local: "1.9.9"))
+    }
+
+    @Test func olderRemoteIsNotNewer() {
+        #expect(!VersionSemver.isRemoteNewer(remote: "1.0", local: "1.1"))
+        #expect(!VersionSemver.isRemoteNewer(remote: "0.9", local: "1.0"))
+    }
+}
+
 struct SpeakModeTests {
     @Test func speakIsVisibleAndGrokOnly() {
         #expect(ActionMode.visibleCases.contains(.speak))

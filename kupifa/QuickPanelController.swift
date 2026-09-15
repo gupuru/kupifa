@@ -16,6 +16,19 @@ private final class KeyablePanel: NSPanel {
     override func cancelOperation(_ sender: Any?) {
         orderOut(nil)
     }
+
+    override func performClose(_ sender: Any?) {
+        orderOut(nil)
+    }
+
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        let flags = event.modifierFlags.intersection([.command, .shift, .option, .control])
+        if flags == .command, event.charactersIgnoringModifiers?.lowercased() == "w" {
+            orderOut(nil)
+            return true
+        }
+        return super.performKeyEquivalent(with: event)
+    }
 }
 
 final class QuickPanelController {
@@ -128,7 +141,7 @@ final class QuickPanelController {
         panel.level = .floating
         panel.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
         panel.isReleasedWhenClosed = false
-        // 他アプリへフォーカスが移っても閉じない。閉じるのはボタン / Esc / ホットキーのみ。
+        // 他アプリへフォーカスが移っても閉じない。閉じるのはボタン / ⌘W / Esc / ホットキーのみ。
         panel.hidesOnDeactivate = false
         // ウィンドウ自体は透明にし、SwiftUI側で描く角丸の不透明パネルを浮かせる
         panel.backgroundColor = .clear

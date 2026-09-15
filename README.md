@@ -1,10 +1,16 @@
 # kupifa
 
-ホットキー一発で呼び出せる、macOS用のAIクイックアシスタント。
+[![License: MIT](https://img.shields.io/badge/License-MIT-d8ff3e.svg)](LICENSE)
 
-プロダクトサイト（`docs/`）: ホットキーで文章を整え、Grok に投げる、という使い方を先に見せています。公開先は [Cloudflare Pages](https://kupifa.pages.dev/)。
+ホットキー一発で呼び出せる、macOS用のAIクイックアシスタント。**MIT ライセンス**のオープンソースです。
+
+プロダクトサイト（`docs/`）: ホットキーで文章を整え、Grok に投げる、という使い方を先に見せています。公開先は [GitHub Pages](https://gupuru.github.io/kupifa/)。ソースと配布用 DMG も [GitHub](https://github.com/gupuru/kupifa) に置いています。
 
 メール文章の下書きなど、書きかけのテキストをその場でAIに投げて「文章を整える」「翻訳」「音声で読む」ができる、Spotlight風のフローティングパネルアプリです。
+
+## ライセンス
+
+[MIT License](LICENSE) です。著作権表示を残したうえで、利用・改変・再配布・商用利用ができます。
 
 ## 主な機能
 
@@ -34,7 +40,7 @@
 | `⌘⇧C` | 最初の結果をコピー |
 | `⌘⇧1`〜`⌘⇧3` | N番目の結果カードをコピー |
 | `⌘,` | 設定を開く |
-| `Esc` | パネルを閉じる |
+| `⌘W` | パネルを閉じる（`Esc` でも閉じる） |
 
 ## 使い方
 
@@ -71,34 +77,22 @@ open kupifa.xcodeproj
 
 いまは ad-hoc 署名です。Developer ID + 公証に移すときは、スクリプト先頭の `SIGN_IDENTITY` を変えて、`notarytool` / `stapler` を足してください。
 
-## サイト公開・配布（Cloudflare）
+## サイト公開・配布
 
-リポジトリは private のまま、サイトと `.dmg` だけ公開します。
+サイトも `.dmg` も GitHub です。LP は `docs/` を編集して `main` に push すると [GitHub Pages](https://gupuru.github.io/kupifa/) に載ります。
 
 | もの | 置き場 | URL |
 | --- | --- | --- |
-| ランディング（`docs/`） | Cloudflare Pages | https://kupifa.pages.dev/ |
-| `kupifa.dmg` | Cloudflare R2（`kupifa-downloads`） | https://kupifa.pages.dev/download |
+| ランディング（`docs/`） | GitHub Pages | https://gupuru.github.io/kupifa/ |
+| `kupifa.dmg` | GitHub Releases | https://github.com/gupuru/kupifa/releases/latest/download/kupifa.dmg |
 
-Pages は1ファイル 25MiB までなので、DMG は R2 に置き、Pages Function（`functions/download.js`）が `/download` で配信します。デプロイは `.github/workflows/deploy.yml` です。
+`docs/download.html` は latest の DMG へ転送します。デプロイは `.github/workflows/deploy.yml` です。
 
-### 初回だけやること
-
-1. Cloudflare ダッシュボードで **R2 を有効化**する（未有効だとバケット作成が `code: 10042` で落ちる）
-2. API トークンを作る  
-   [Create Custom Token](https://dash.cloudflare.com/profile/api-tokens) で、少なくとも次を付与する  
-   - Account → Cloudflare Pages → Edit  
-   - Account → Workers R2 Storage → Edit
-3. Account ID を控える（ダッシュボード右下、または Overview）
-4. GitHub リポジトリの **Settings → Secrets and variables → Actions** に入れる  
-   - `CLOUDFLARE_API_TOKEN`  
-   - `CLOUDFLARE_ACCOUNT_ID`
-
-初回の `main` プッシュで Pages プロジェクト `kupifa` と R2 バケット `kupifa-downloads` を作ります。
+初回はリポジトリを public にし、Settings → Pages の Source を **GitHub Actions** にしてください。`main` への push でサイトが公開されます。
 
 ### サイトを更新する
 
-`main` に push すると `docs/` が Pages に載ります。
+`docs/` を直して `main` に push します。GitHub 上で `docs/index.html` を編集しても同じです。
 
 ### DMG を上げる
 
@@ -107,7 +101,7 @@ Pages は1ファイル 25MiB までなので、DMG は R2 に置き、Pages Func
 - GitHub Actions の **Deploy** を Run workflow し、`build_dmg` をオンにする
 - `v0.1.0` のような `v*` タグを push する
 
-上がるまで https://kupifa.pages.dev/download は `kupifa.dmg is not uploaded yet.` の 404 です。
+上がると [Releases](https://github.com/gupuru/kupifa/releases) に `kupifa.dmg` が付きます。未作成のうちは latest のダウンロード URL が 404 です。
 
 ## アーキテクチャ
 

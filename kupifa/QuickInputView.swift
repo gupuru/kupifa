@@ -179,6 +179,8 @@ struct QuickInputView: View {
                 HStack(spacing: 4) {
                     Image(systemName: "xmark")
                     Text("閉じる")
+                    Text("⌘W")
+                        .foregroundStyle(KupifaTheme.muted.opacity(0.72))
                 }
                 .font(.caption)
                 .foregroundStyle(KupifaTheme.muted)
@@ -190,8 +192,8 @@ struct QuickInputView: View {
                 }
             }
             .buttonStyle(.plain)
-            .help("パネルを閉じる（Esc）")
-            .keyboardShortcut(.escape, modifiers: [])
+            .help("パネルを閉じる（⌘W / Esc）")
+            .keyboardShortcut("w", modifiers: .command)
         }
         .padding(.horizontal, 16)
         .padding(.top, 12)
@@ -399,7 +401,7 @@ struct QuickInputView: View {
                 Spacer()
             }
 
-            Text("⌘⏎ 実行 ・ ⌘K 新規 ・ ⌘F 速さ ・ ⌘L 言語 ・ Esc 閉じる")
+            Text("⌘⏎ 実行 ・ ⌘K 新規 ・ ⌘F 速さ ・ ⌘L 言語 ・ ⌘W 閉じる")
                 .font(.caption)
                 .foregroundStyle(KupifaTheme.muted)
                 .fixedSize(horizontal: false, vertical: true)

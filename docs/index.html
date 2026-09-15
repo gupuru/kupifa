@@ -4,19 +4,19 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>kupifa — 書く場所のまま、整える。</title>
-  <meta name="description" content="書いているアプリのまま ⌥ Space。文章を整える、返事を書く、翻訳する、音声で読む。macOS 用の AI パネルです。Grok へ直接つながるので、API キーは自分の Mac のキーチェーンに置いたまま使えます。">
+  <meta name="description" content="書いているアプリのまま ⌥ Space。文章を整える、返事を書く、翻訳する、音声で読む。MIT ライセンスのオープンソースな macOS 用 AI パネルです。Grok へ直接つながるので、API キーは自分の Mac のキーチェーンに置いたまま使えます。">
   <meta name="theme-color" content="#08090c">
-  <link rel="canonical" href="https://kupifa.pages.dev/">
+  <link rel="canonical" href="https://gupuru.github.io/kupifa/">
   <meta property="og:title" content="kupifa — 書く場所のまま、整える。">
-  <meta property="og:description" content="メールを書いている画面のまま ⌥ Space。整える、返事、翻訳、音声。Grok へ直接つながります。">
+  <meta property="og:description" content="メールを書いている画面のまま ⌥ Space。整える、返事、翻訳、音声。MIT のオープンソースです。">
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://kupifa.pages.dev/">
+  <meta property="og:url" content="https://gupuru.github.io/kupifa/">
   <meta property="og:locale" content="ja_JP">
-  <meta property="og:image" content="https://kupifa.pages.dev/app-icon.png">
+  <meta property="og:image" content="https://gupuru.github.io/kupifa/app-icon.png">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="kupifa — 書く場所のまま、整える。">
-  <meta name="twitter:description" content="メールを書いている画面のまま ⌥ Space。整える、返事、翻訳、音声。Grok へ直接つながります。">
-  <meta name="twitter:image" content="https://kupifa.pages.dev/app-icon.png">
+  <meta name="twitter:description" content="メールを書いている画面のまま ⌥ Space。整える、返事、翻訳、音声。MIT のオープンソースです。">
+  <meta name="twitter:image" content="https://gupuru.github.io/kupifa/app-icon.png">
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./app-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -40,6 +40,8 @@
       <a href="#product">できること</a>
       <a href="#keys">キー</a>
       <a href="#start">始める</a>
+      <a href="#source">ソース</a>
+      <a href="https://github.com/gupuru/kupifa" rel="noopener noreferrer" target="_blank">GitHub</a>
     </nav>
     <div class="nav-status" aria-live="polite">
       <span class="pulse"></span>
@@ -52,7 +54,8 @@
       <p class="eyebrow">
         <span class="chip">macOS</span>
         <span class="chip">GROK</span>
-        <span class="chip">メニューバー</span>
+        <span class="chip">OPEN SOURCE</span>
+        <span class="chip">MIT</span>
       </p>
       <h1>
         書く場所のまま、<em>整える。</em>
@@ -61,17 +64,19 @@
         メールの下書きを、チャット画面へ持ち出さなくていい。<br>
         <kbd>⌥ Space</kbd> でパネルを開き、<kbd>⌘⏎</kbd> で投げる。<kbd>⌘⇧C</kbd> でコピーすれば、書いていた文へ戻る。
       </p>
+      <p class="lede-en">Open-source macOS AI panel. Polish, reply, translate, or speak — without leaving the app you are writing in.</p>
       <div class="hero-actions">
-        <a class="btn btn-download" href="/download">
+        <a class="btn btn-download" href="https://github.com/gupuru/kupifa/releases/latest/download/kupifa.dmg">
           <img class="btn-app-icon" src="./app-icon.png" width="36" height="36" alt="" decoding="async">
           <span class="btn-download-copy">
             <strong>Mac用をダウンロード</strong>
-            <small>macOS 15+</small>
+            <small>GitHub Releases · macOS 15+</small>
           </span>
         </a>
+        <a class="btn btn-ghost" href="https://github.com/gupuru/kupifa" rel="noopener noreferrer" target="_blank">GitHub で見る</a>
         <a class="btn btn-ghost" href="#flow">使い方を見る</a>
       </div>
-      <p class="hero-note">Grok へ直接つながる。API キーは自分のものを、キーチェーンへ。</p>
+      <p class="hero-note">MIT ライセンス。Grok へ直接つながる。API キーは自分のものを、キーチェーンへ。</p>
     </section>
 
     <section class="stage will-reveal" aria-label="kupifa パネルの見本">
@@ -80,6 +85,7 @@
           <div class="panel-chrome">
             <span>kupifa</span>
             <span class="dots">Grok · ⌥ Space</span>
+            <span class="panel-close" aria-hidden="true">閉じる ⌘W</span>
           </div>
           <div class="panel-modes" role="tablist" aria-label="モード">
             <button type="button" class="mode is-on" data-mode="polish" role="tab" aria-selected="true">文章を整える</button>
@@ -303,21 +309,59 @@
         </li>
       </ol>
       <div class="cta-row">
-        <a class="btn btn-download" href="/download">
+        <a class="btn btn-download" href="https://github.com/gupuru/kupifa/releases/latest/download/kupifa.dmg">
           <img class="btn-app-icon" src="./app-icon.png" width="36" height="36" alt="" decoding="async">
           <span class="btn-download-copy">
             <strong>Mac用をダウンロード</strong>
-            <small>macOS 15+</small>
+            <small>GitHub Releases · macOS 15+</small>
           </span>
         </a>
-        <p class="cta-note">macOS 15 以降 · メニューバー常駐 · アクセシビリティの許可が必要</p>
+        <a class="btn btn-ghost" href="https://github.com/gupuru/kupifa" rel="noopener noreferrer" target="_blank">ソースを見る</a>
+        <p class="cta-note">macOS 15 以降 · メニューバー常駐 · アクセシビリティの許可が必要 · MIT License</p>
+      </div>
+    </section>
+
+    <section class="source will-reveal" id="source">
+      <div class="section-head">
+        <p class="mono-label">06 — SOURCE</p>
+        <h2>コードは、開いている。</h2>
+        <p class="section-lead">MIT ライセンス。フォークも改変も、商用利用もできる。配布用の DMG も GitHub Releases に置いてある。</p>
+      </div>
+      <div class="bento">
+        <article class="card">
+          <p class="card-kicker">LICENSE</p>
+          <h3>MIT</h3>
+          <p>使って、読んで、直して、再配布していい。著作権表示だけ残す。</p>
+        </article>
+        <article class="card">
+          <p class="card-kicker">GITHUB</p>
+          <h3>ソースはそのまま。</h3>
+          <p>Issue と Pull Request を歓迎する。自分の Mac で Xcode を開けば、すぐ走らせられる。</p>
+        </article>
+        <article class="card span-2 dark">
+          <p class="card-kicker">BYOK</p>
+          <h3>キーも履歴も、運営には届かない。</h3>
+          <p>通信はあなたの Mac から Grok へ直接。kupifa のサーバーは経路に無い。だから、ソースを公開しても預かりものはない。</p>
+        </article>
+      </div>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="https://github.com/gupuru/kupifa" rel="noopener noreferrer" target="_blank">リポジトリを開く</a>
+        <a class="btn btn-ghost" href="https://github.com/gupuru/kupifa/blob/main/LICENSE" rel="noopener noreferrer" target="_blank">MIT License</a>
+        <a class="btn btn-ghost" href="https://github.com/gupuru/kupifa/releases" rel="noopener noreferrer" target="_blank">Releases</a>
       </div>
     </section>
   </main>
 
   <footer class="foot">
-    <p>kupifa — 書く場所のまま、整える。</p>
-    <p class="foot-meta">キーは端末の中 · 運営は中継しない</p>
+    <div class="foot-row">
+      <p>kupifa — 書く場所のまま、整える。</p>
+      <nav class="foot-links" aria-label="フッター">
+        <a href="https://github.com/gupuru/kupifa" rel="noopener noreferrer" target="_blank">GitHub</a>
+        <a href="https://github.com/gupuru/kupifa/blob/main/LICENSE" rel="noopener noreferrer" target="_blank">MIT License</a>
+        <a href="https://github.com/gupuru/kupifa/releases" rel="noopener noreferrer" target="_blank">Releases</a>
+      </nav>
+    </div>
+    <p class="foot-meta">オープンソース · キーは端末の中 · 運営は中継しない</p>
   </footer>
 
   <script src="./app.js"></script>

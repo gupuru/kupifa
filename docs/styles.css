@@ -232,6 +232,16 @@ h1 em {
   font-size: clamp(16px, 2vw, 19px);
 }
 
+.lede-en {
+  max-width: 38em;
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  opacity: 0.78;
+}
+
 .hero-actions {
   display: flex;
   flex-wrap: wrap;
@@ -428,7 +438,8 @@ h1 em {
 .architecture,
 .guarantees,
 .product,
-.start {
+.start,
+.source {
   max-width: var(--max);
   margin: 0 auto;
   padding: max(8vh, 96px) 6vw;
@@ -743,6 +754,26 @@ h2 {
   padding: 12px 16px;
   border-bottom: 1px solid var(--line);
   font-size: 12px;
+  color: var(--muted);
+}
+
+.panel-chrome {
+  justify-content: flex-start;
+  gap: 10px;
+}
+
+.panel-chrome .dots {
+  margin-left: auto;
+}
+
+.panel-close {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
   color: var(--muted);
 }
 
@@ -1124,6 +1155,31 @@ kbd {
 
 .foot p {
   margin: 0;
+}
+
+.foot-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px 24px;
+}
+
+.foot-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.foot-links a {
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.foot-links a:hover,
+.foot-links a:focus-visible {
+  color: var(--lime);
 }
 
 .foot-meta {

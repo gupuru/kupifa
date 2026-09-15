@@ -1,10 +1,5 @@
-# サイト → Cloudflare Pages（docs/）
-# DMG  → Cloudflare R2（kupifa-downloads/kupifa.dmg）
-# ダウンロードボタンは同一オリジンの /download を指す。
-#
-# GitHub Secrets:
-#   CLOUDFLARE_API_TOKEN   Account で Pages Edit + Workers R2 Storage Edit
-#   CLOUDFLARE_ACCOUNT_ID
+# サイト → GitHub Pages（docs/ → https://gupuru.github.io/kupifa/）
+# DMG  → GitHub Releases（kupifa.dmg）
 #
 # DMG は毎プッシュでは作らない（macOS runner が重い）。
 # タグ v* か、Actions の Run workflow で build_dmg をオンにしたときだけ。
@@ -18,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       build_dmg:
-        description: "Build DMG on macOS and upload to R2"
+        description: "Build DMG on macOS and upload to GitHub Releases"
         type: boolean
         default: false
 
@@ -28,25 +23,13 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      deployments: write
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v6
-
-      - name: Ensure R2 bucket
-        uses: cloudflare/wrangler-action@v4
-        continue-on-error: true
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: r2 bucket create kupifa-downloads
-
-      - name: Ensure Pages project
-        uses: cloudflare/wrangler-action@v4
-        continue-on-error: true
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages project create kupifa --production-branch=main
 
       - name: Generate docs/version.json
         run: |
@@ -57,25 +40,38 @@ jobs:
 
           pbxproj = Path('kupifa.xcodeproj/project.pbxproj')
           text = pbxproj.read_text(encoding='utf-8')
-          m = re.search(r'MARKETING_VERSION\s*=\s*([^;]+);', text)
-          version = m.group(1).strip() if m else '0.0'
+
+          # アプリ本体 (com.kupifa) の MARKETING_VERSION を使う。
+          # 先に見つかった MARKETING_VERSION だとテストターゲットを拾うことがある。
+          app_versions = re.findall(
+              r'MARKETING_VERSION\s*=\s*([^;]+);\s*PRODUCT_BUNDLE_IDENTIFIER\s*=\s*com\.kupifa;',
+              text,
+          )
+          app_versions = [v.strip() for v in app_versions]
+          if app_versions:
+              version = app_versions[0]
+          else:
+              m = re.search(r'MARKETING_VERSION\s*=\s*([^;]+);', text)
+              version = m.group(1).strip() if m else '0.0'
 
           out = {
               "version": version,
-              "downloadUrl": "https://kupifa.pages.dev/download",
+              "downloadUrl": "https://github.com/gupuru/kupifa/releases/latest/download/kupifa.dmg",
           }
           Path('docs/version.json').write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding='utf-8')
           print("docs/version.json:", out)
+          print("app MARKETING_VERSION matches:", app_versions)
           PY
 
-      - name: Deploy docs to Pages
-        uses: cloudflare/wrangler-action@v4
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v4
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # wrangler.toml の pages_build_output_dir とルートの functions/ を使う
-          command: pages deploy --project-name=kupifa --branch=main
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          path: docs
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
   dmg:
     name: Build and upload DMG
@@ -83,15 +79,44 @@ jobs:
       startsWith(github.ref, 'refs/tags/v')
       || (github.event_name == 'workflow_dispatch' && inputs.build_dmg)
     runs-on: macos-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v6
 
       - name: Build DMG
         run: ./scripts/build-release.sh
 
-      - name: Upload DMG to R2
-        uses: cloudflare/wrangler-action@v4
+      - name: Resolve release tag
+        id: release
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          else
+            version=$(python3 - <<'PY'
+          import re
+          from pathlib import Path
+          text = Path('kupifa.xcodeproj/project.pbxproj').read_text(encoding='utf-8')
+          app_versions = re.findall(
+              r'MARKETING_VERSION\s*=\s*([^;]+);\s*PRODUCT_BUNDLE_IDENTIFIER\s*=\s*com\.kupifa;',
+              text,
+          )
+          if app_versions:
+              print(app_versions[0].strip())
+          else:
+              m = re.search(r'MARKETING_VERSION\s*=\s*([^;]+);', text)
+              print(m.group(1).strip() if m else '0.0')
+          PY
+            )
+            echo "tag=v${version}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload DMG to GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: r2 object put kupifa-downloads/kupifa.dmg --file=dist/kupifa.dmg --remote --content-type=application/x-apple-diskimage
+          tag_name: ${{ steps.release.outputs.tag }}
+          name: ${{ steps.release.outputs.tag }}
+          files: dist/kupifa.dmg
+          generate_release_notes: true
+          make_latest: true
+          fail_on_unmatched_files: true

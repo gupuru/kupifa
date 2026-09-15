@@ -244,21 +244,48 @@ private struct GeneralSettingsTab: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            if updateChecker.updateAvailable, let remoteVersion = updateChecker.remoteVersion {
-                SettingsCard(title: "アップデート") {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("現在 v\(updateChecker.localVersion) / 最新 v\(remoteVersion)")
-                            .font(.caption)
-                            .foregroundStyle(KupifaTheme.muted)
-                        Button("ダウンロード（v\(remoteVersion)）") {
-                            updateChecker.openDownloadPage()
+            SettingsCard(title: "バージョン") {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("現在 v\(updateChecker.localVersion)")
+                        .font(.caption)
+                        .foregroundStyle(KupifaTheme.muted)
+
+                    versionStatusText
+
+                    HStack(spacing: 8) {
+                        Button {
+                            updateChecker.checkNow()
+                        } label: {
+                            HStack(spacing: 6) {
+                                if updateChecker.status == .checking {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                }
+                                Text(updateChecker.status == .checking ? "確認中…" : "バージョンを確認")
+                            }
                         }
                         .buttonStyle(.plain)
                         .font(.caption.weight(.semibold))
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
-                        .foregroundStyle(KupifaTheme.inkOnLime)
-                        .background(Capsule().fill(KupifaTheme.lime))
+                        .foregroundStyle(KupifaTheme.lime)
+                        .background {
+                            Capsule()
+                                .strokeBorder(KupifaTheme.lime, lineWidth: 1)
+                        }
+                        .disabled(updateChecker.status == .checking)
+
+                        if updateChecker.updateAvailable, let remoteVersion = updateChecker.remoteVersion {
+                            Button("ダウンロード（v\(remoteVersion)）") {
+                                updateChecker.openDownloadPage()
+                            }
+                            .buttonStyle(.plain)
+                            .font(.caption.weight(.semibold))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .foregroundStyle(KupifaTheme.inkOnLime)
+                            .background(Capsule().fill(KupifaTheme.lime))
+                        }
                     }
                 }
             }
@@ -355,6 +382,30 @@ private struct GeneralSettingsTab: View {
             }
 
             DataResetSection()
+        }
+    }
+
+    @ViewBuilder
+    private var versionStatusText: some View {
+        switch updateChecker.status {
+        case .idle:
+            EmptyView()
+        case .checking:
+            Text("配布中の最新版を確認しています…")
+                .font(.caption)
+                .foregroundStyle(KupifaTheme.muted)
+        case .upToDate:
+            Text("最新です")
+                .font(.caption)
+                .foregroundStyle(KupifaTheme.lime)
+        case .updateAvailable:
+            Text("新しいバージョンがあります（v\(updateChecker.remoteVersion ?? "")）")
+                .font(.caption)
+                .foregroundStyle(KupifaTheme.lime)
+        case .failed:
+            Text("確認できませんでした。ネットワークを確認して再度お試しください。")
+                .font(.caption)
+                .foregroundStyle(KupifaTheme.danger)
         }
     }
 }

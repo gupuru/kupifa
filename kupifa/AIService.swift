@@ -174,11 +174,11 @@ struct AIService {
         if enableSearch {
             body["search_parameters"] = ["mode": "on", "return_citations": true]
         }
-        // 速さ優先時は reasoning を抑える（4.5 / 4.6 は none 不可のため low）
+        // 速さ優先時は reasoning を抑える（4.5 以降は none 不可のため low）
         if preferSpeed {
             if model.contains("grok-4.3") {
                 body["reasoning_effort"] = "none"
-            } else if model.contains("grok-4.5") || model.contains("grok-4.6") {
+            } else if model.contains("grok-4.5") || model.contains("grok-4.6") || model.contains("grok-4.7") {
                 body["reasoning_effort"] = "low"
             }
         }

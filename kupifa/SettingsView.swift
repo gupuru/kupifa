@@ -5,6 +5,7 @@
 //  APIキー・モデル・ホットキーなどの設定画面。
 //
 
+import AppKit
 import SwiftUI
 
 private enum SettingsTab: String, CaseIterable, Identifiable {
@@ -84,7 +85,8 @@ struct SettingsView: View {
         .frame(minWidth: 520, minHeight: 520)
         .foregroundStyle(KupifaTheme.ink)
         .background(KupifaTheme.bg)
-        .tint(KupifaTheme.lime)
+        .preferredColorScheme(.dark)
+        .background(SettingsFieldColorFix())
         .onAppear {
             NSApp.windows
                 .filter { $0.isVisible && KupifaTheme.shouldApplyWindowChrome($0) }
@@ -126,6 +128,138 @@ private func settingsFieldBackground() -> some View {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .strokeBorder(KupifaTheme.line, lineWidth: 1)
         }
+}
+
+/// システムのメニューは SwiftUI の tint だと項目名が黒くなる。
+/// 閉じた状態の文字色は AppKit 側で明るい色に固定する。
+private struct SettingsMenuField<Option: Identifiable & Hashable>: View {
+    @Binding var selection: String
+    let options: [Option]
+    let optionID: (Option) -> String
+    let optionTitle: (Option) -> String
+    var isEnabled: Bool = true
+
+    var body: some View {
+        SettingsPopUpButton(
+            items: options.map { (id: optionID($0), title: optionTitle($0)) },
+            selection: $selection,
+            isEnabled: isEnabled
+        )
+        .frame(maxWidth: .infinity, minHeight: 28, alignment: .leading)
+    }
+}
+
+private struct SettingsPopUpButton: NSViewRepresentable {
+    var items: [(id: String, title: String)]
+    @Binding var selection: String
+    var isEnabled: Bool
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(selection: $selection)
+    }
+
+    func sizeThatFits(_ proposal: ProposedViewSize, nsView: NSPopUpButton, context: Context) -> CGSize? {
+        let height = max(nsView.fittingSize.height, 28)
+        let width = proposal.width ?? nsView.fittingSize.width
+        return CGSize(width: width, height: height)
+    }
+
+    func makeNSView(context: Context) -> NSPopUpButton {
+        let button = NSPopUpButton(frame: .zero, pullsDown: false)
+        button.bezelStyle = .rounded
+        button.controlSize = .regular
+        button.font = NSFont.systemFont(ofSize: NSFont.systemFontSize)
+        button.appearance = NSAppearance(named: .darkAqua)
+        button.target = context.coordinator
+        button.action = #selector(Coordinator.changed(_:))
+        button.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        button.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        return button
+    }
+
+    func updateNSView(_ button: NSPopUpButton, context: Context) {
+        context.coordinator.selection = $selection
+        button.appearance = NSAppearance(named: .darkAqua)
+        button.isEnabled = isEnabled
+        button.contentTintColor = button.isEnabled ? KupifaTheme.nsInk : KupifaTheme.nsMuted
+
+        let signature = items.map(\.id).joined(separator: "\u{1f}")
+        if context.coordinator.itemsSignature != signature {
+            context.coordinator.itemsSignature = signature
+            button.removeAllItems()
+            for item in items {
+                button.addItem(withTitle: item.title)
+                button.lastItem?.representedObject = item.id
+            }
+        }
+
+        if let index = items.firstIndex(where: { $0.id == selection }), button.indexOfSelectedItem != index {
+            button.selectItem(at: index)
+        }
+        applyTitleColor(button)
+    }
+
+    private func applyTitleColor(_ button: NSPopUpButton) {
+        let title = button.selectedItem?.title ?? ""
+        let color = button.isEnabled ? KupifaTheme.nsInk : KupifaTheme.nsMuted
+        button.attributedTitle = NSAttributedString(
+            string: title,
+            attributes: [
+                .foregroundColor: color,
+                .font: NSFont.systemFont(ofSize: NSFont.systemFontSize),
+            ]
+        )
+    }
+
+    final class Coordinator: NSObject {
+        var selection: Binding<String>
+        var itemsSignature = ""
+
+        init(selection: Binding<String>) {
+            self.selection = selection
+        }
+
+        @objc func changed(_ sender: NSPopUpButton) {
+            guard let id = sender.selectedItem?.representedObject as? String else { return }
+            selection.wrappedValue = id
+            let color = sender.isEnabled ? KupifaTheme.nsInk : KupifaTheme.nsMuted
+            sender.attributedTitle = NSAttributedString(
+                string: sender.titleOfSelectedItem ?? "",
+                attributes: [
+                    .foregroundColor: color,
+                    .font: NSFont.systemFont(ofSize: NSFont.systemFontSize),
+                ]
+            )
+        }
+    }
+}
+
+/// プレーンな入力欄は、フォーカスが外れると文字色がシステムの黒に戻ることがある。
+private struct SettingsFieldColorFix: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView(frame: .zero)
+        view.isHidden = true
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        DispatchQueue.main.async {
+            guard let root = nsView.window?.contentView else { return }
+            recolorEditableFields(in: root)
+        }
+    }
+
+    private func recolorEditableFields(in view: NSView) {
+        if let field = view as? NSTextField, field.isEditable {
+            field.textColor = KupifaTheme.nsInk
+            if let editor = field.currentEditor() as? NSTextView {
+                editor.insertionPointColor = KupifaTheme.nsInk
+            }
+        }
+        for subview in view.subviews {
+            recolorEditableFields(in: subview)
+        }
+    }
 }
 
 // MARK: - APIキータブ
@@ -175,8 +309,13 @@ private struct ProviderKeyRow: View {
                 }
             }
 
-            SecureField("APIキー（\(provider.apiKeyHint) で取得）", text: $apiKey)
+            SecureField(
+                "APIキー",
+                text: $apiKey,
+                prompt: Text("APIキー（\(provider.apiKeyHint) で取得）").foregroundStyle(KupifaTheme.muted)
+            )
                 .textFieldStyle(.plain)
+                .foregroundStyle(KupifaTheme.ink)
                 .padding(8)
                 .background { settingsFieldBackground() }
                 .onSubmit(save)
@@ -184,6 +323,7 @@ private struct ProviderKeyRow: View {
             HStack(spacing: 8) {
                 TextField("モデル名", text: $model, prompt: Text(provider.defaultModel).foregroundStyle(KupifaTheme.muted))
                     .textFieldStyle(.plain)
+                    .foregroundStyle(KupifaTheme.ink)
                     .padding(8)
                     .background { settingsFieldBackground() }
                 Button("保存", action: save)
@@ -260,6 +400,7 @@ private struct GeneralSettingsTab: View {
                                 if updateChecker.status == .checking {
                                     ProgressView()
                                         .controlSize(.small)
+                                        .tint(KupifaTheme.lime)
                                 }
                                 Text(updateChecker.status == .checking ? "確認中…" : "バージョンを確認")
                             }
@@ -291,14 +432,12 @@ private struct GeneralSettingsTab: View {
             }
 
             SettingsCard(title: "呼び出しホットキー") {
-                Picker("ショートカット", selection: $hotKeyRaw) {
-                    ForEach(HotKeyOption.allCases) { option in
-                        Text(option.label).tag(option.rawValue)
-                    }
-                }
-                .labelsHidden()
-                .pickerStyle(.menu)
-                .tint(KupifaTheme.ink)
+                SettingsMenuField(
+                    selection: $hotKeyRaw,
+                    options: HotKeyOption.allCases,
+                    optionID: \.rawValue,
+                    optionTitle: \.label
+                )
                 .onChange(of: hotKeyRaw) { _, newValue in
                     if let option = HotKeyOption(rawValue: newValue) {
                         HotKeyManager.shared.register(option: option) {
@@ -333,7 +472,10 @@ private struct GeneralSettingsTab: View {
                             .strokeBorder(KupifaTheme.lime, lineWidth: 1)
                     }
                 }
-                Toggle("⌘C を2回連続でパネルを開く", isOn: $openOnDoubleCopy)
+                Toggle(isOn: $openOnDoubleCopy) {
+                    Text("⌘C を2回連続でパネルを開く")
+                        .foregroundStyle(KupifaTheme.ink)
+                }
                     .tint(KupifaTheme.lime)
                     .onChange(of: openOnDoubleCopy) { _, enabled in
                         if enabled {
@@ -352,29 +494,34 @@ private struct GeneralSettingsTab: View {
             }
 
             SettingsCard(title: "デフォルト") {
-                Picker("出力言語", selection: $outputLanguageRaw) {
-                    ForEach(OutputLanguage.allCases) { lang in
-                        Text(lang.label).tag(lang.rawValue)
-                    }
-                }
-                .pickerStyle(.menu)
-                .tint(KupifaTheme.ink)
-                .disabled(generateBothLanguages)
+                SettingsMenuField(
+                    selection: $outputLanguageRaw,
+                    options: OutputLanguage.allCases,
+                    optionID: \.rawValue,
+                    optionTitle: \.label,
+                    isEnabled: !generateBothLanguages
+                )
                 Text("翻訳モードでは入力が日本語か英語かを文字から判定し、反対側へ訳します。")
                     .font(.caption)
                     .foregroundStyle(KupifaTheme.muted)
             }
 
             SettingsCard(title: "速度") {
-                Toggle("速さ優先", isOn: $preferSpeed)
+                Toggle(isOn: $preferSpeed) {
+                    Text("速さ優先")
+                        .foregroundStyle(KupifaTheme.ink)
+                }
                     .tint(KupifaTheme.lime)
-                Text("ON: Grok 4.6（reasoning低）と短い出力上限。OFF: 品質寄り。モデル名を手動指定している場合はそちらが優先されます。")
+                Text("ON: Grok 4.7（reasoning低）と短い出力上限。OFF: 品質寄り。モデル名を手動指定している場合はそちらが優先されます。")
                     .font(.caption)
                     .foregroundStyle(KupifaTheme.muted)
             }
 
             SettingsCard(title: "生成") {
-                Toggle("日本語と英語を同時に生成", isOn: $generateBothLanguages)
+                Toggle(isOn: $generateBothLanguages) {
+                    Text("日本語と英語を同時に生成")
+                        .foregroundStyle(KupifaTheme.ink)
+                }
                     .tint(KupifaTheme.lime)
                 Text("ONにすると、実行のたびに日本語と英語の両方の結果を生成します（翻訳モードでは無効）。リクエスト数は2倍になり、体感も遅くなります。")
                     .font(.caption)

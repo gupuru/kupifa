@@ -36,6 +36,10 @@ enum KupifaTheme {
     static func applyWindowChrome(_ window: NSWindow) {
         guard shouldApplyWindowChrome(window) else { return }
         window.backgroundColor = nsBg
+        // 背景は常に暗いので、システムの入力欄やメニューが黒文字にならないようダーク表示に固定する
+        if window.appearance?.name != .darkAqua {
+            window.appearance = NSAppearance(named: .darkAqua)
+        }
     }
 
     private static func isMenuBarChromeWindow(_ window: NSWindow) -> Bool {

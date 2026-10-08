@@ -98,8 +98,8 @@ enum AIProvider: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
     var displayName: String { "Grok" }
-    var defaultModel: String { "grok-4.6" }
-    var fastModel: String { "grok-4.6" }
+    var defaultModel: String { "grok-4.7" }
+    var fastModel: String { "grok-4.7" }
 
     /// カスタムモデルが無ければ、速さ優先設定に応じたデフォルトを返す
     func resolvedModel(preferSpeed: Bool) -> String {
